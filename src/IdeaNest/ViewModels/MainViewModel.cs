@@ -116,11 +116,13 @@ public class MainViewModel : ViewModelBase
     {
         get
         {
-            if (HasActiveFilter)
+            // Show fraction whenever the visible set differs from total,
+            // including the implicit "archived hidden" case.
+            if (VisibleCount == TotalCount)
             {
-                return $"{VisibleCount}件 / 全{TotalCount}件";
+                return $"{TotalCount}件";
             }
-            return $"{TotalCount}件";
+            return $"{VisibleCount}件 / 全{TotalCount}件";
         }
     }
 
@@ -132,7 +134,8 @@ public class MainViewModel : ViewModelBase
         {
             if (TotalCount == 0) return "まだアイデアがありません";
             if (HasActiveFilter) return "条件に一致するカードがありません";
-            if (ShowArchived) return "アーカイブ済みカードはありません";
+            // No filter, total > 0, but visible == 0 means everything is archived
+            // and ShowArchived is OFF.
             return "表示できるカードがありません";
         }
     }
@@ -145,8 +148,6 @@ public class MainViewModel : ViewModelBase
                 return "右下の「＋」ボタン (または Ctrl+Shift+N) から最初のアイデアを追加できます。";
             if (HasActiveFilter)
                 return "検索語やタグを変更してください。";
-            if (ShowArchived)
-                return "カードをアーカイブすると、ここに表示されます。";
             return "「アーカイブを表示」を有効にすると、アーカイブ済みカードが見られます。";
         }
     }

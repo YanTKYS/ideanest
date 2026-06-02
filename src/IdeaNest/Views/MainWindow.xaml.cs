@@ -26,10 +26,20 @@ public partial class MainWindow : Window
     {
         if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
         {
-            SearchBox.Focus();
-            SearchBox.SelectAll();
+            FocusSearch();
             e.Handled = true;
         }
+    }
+
+    private void OnFocusSearchClick(object sender, RoutedEventArgs e)
+    {
+        FocusSearch();
+    }
+
+    private void FocusSearch()
+    {
+        SearchBox.Focus();
+        SearchBox.SelectAll();
     }
 
     private void OnSearchBoxPreviewKeyDown(object sender, KeyEventArgs e)

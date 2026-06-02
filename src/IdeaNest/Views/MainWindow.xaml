@@ -33,6 +33,9 @@
             <MenuItem Header="編集(_E)">
                 <MenuItem Header="新規カード追加(_N)" InputGestureText="Ctrl+Shift+N"
                           Command="{Binding AddIdeaCommand}" />
+                <Separator />
+                <MenuItem Header="検索(_F)" InputGestureText="Ctrl+F"
+                          Click="OnFocusSearchClick" />
             </MenuItem>
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="アーカイブを表示" IsCheckable="True" IsChecked="{Binding ShowArchived, Mode=TwoWay}" />
