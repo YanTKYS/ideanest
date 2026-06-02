@@ -518,8 +518,19 @@ public class MainViewModel : ViewModelBase
     {
         if (card == null) return;
         var text = MarkdownExportService.FormatCard(card);
-        Clipboard.SetText(text);
-        ShowStatus("カードをコピーしました。");
+        try
+        {
+            Clipboard.SetText(text);
+            ShowStatus("カードをコピーしました。");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"クリップボードへのコピーに失敗しました:\n{ex.Message}",
+                "IdeaNest",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private void CopyAllMarkdown()
@@ -535,8 +546,19 @@ public class MainViewModel : ViewModelBase
         }
         var text = MarkdownExportService.FormatAll(
             VisibleCards, SearchText, SelectedTag, SelectedColor, ShowArchived);
-        Clipboard.SetText(text);
-        ShowStatus($"表示中の{VisibleCards.Count}件をコピーしました。");
+        try
+        {
+            Clipboard.SetText(text);
+            ShowStatus($"表示中の{VisibleCards.Count}件をコピーしました。");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"クリップボードへのコピーに失敗しました:\n{ex.Message}",
+                "IdeaNest",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private void ShowStatus(string message)
