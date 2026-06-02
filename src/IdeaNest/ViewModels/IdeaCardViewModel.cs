@@ -31,7 +31,7 @@ public class IdeaCardViewModel : ViewModelBase
     public List<string> Tags
     {
         get => Model.Tags;
-        set { Model.Tags = value; OnPropertyChanged(); OnPropertyChanged(nameof(TagsText)); }
+        set { Model.Tags = value; OnPropertyChanged(); OnPropertyChanged(nameof(TagsText)); OnPropertyChanged(nameof(TagsList)); }
     }
 
     public string Color
@@ -89,19 +89,21 @@ public class IdeaCardViewModel : ViewModelBase
 
     public string TagsText => Tags == null || Tags.Count == 0 ? string.Empty : "#" + string.Join(" #", Tags);
 
+    public List<string> TagsList => Tags ?? new List<string>();
+
     public string UpdatedAtText => UpdatedAt.ToString("yyyy/MM/dd HH:mm");
 
     public string BackgroundBrush => Color switch
     {
-        "yellow" => "#FFF6B7",
-        "pink"   => "#FBC5C5",
-        "blue"   => "#BFE2FF",
-        "green"  => "#C8EBC0",
-        "purple" => "#E0CCF0",
-        "orange" => "#FFD9A8",
-        "gray"   => "#E0E0E0",
+        "yellow" => "#FFF7CC",
+        "pink"   => "#FCE7F3",
+        "blue"   => "#DBEAFE",
+        "green"  => "#DCFCE7",
+        "purple" => "#EDE9FE",
+        "orange" => "#FFEDD5",
+        "gray"   => "#F1F3F5",
         "white"  => "#FFFFFF",
-        _         => "#FFF6B7",
+        _         => "#FFFFFF",
     };
 
     public void Touch()
@@ -119,6 +121,7 @@ public class IdeaCardViewModel : ViewModelBase
         OnPropertyChanged(nameof(BodyPreview));
         OnPropertyChanged(nameof(Tags));
         OnPropertyChanged(nameof(TagsText));
+        OnPropertyChanged(nameof(TagsList));
         OnPropertyChanged(nameof(Color));
         OnPropertyChanged(nameof(BackgroundBrush));
         OnPropertyChanged(nameof(IsPinned));
