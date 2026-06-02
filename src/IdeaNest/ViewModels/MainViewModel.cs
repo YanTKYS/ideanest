@@ -133,6 +133,7 @@ public class MainViewModel : ViewModelBase
     public ICommand ClearSearchCommand { get; }
     public ICommand ClearColorCommand { get; }
     public ICommand ManageTagsCommand { get; }
+    public ICommand ExportMarkdownCommand { get; }
 
     public int TotalCount => AllCards.Count;
     public int VisibleCount => VisibleCards.Count;
@@ -198,6 +199,7 @@ public class MainViewModel : ViewModelBase
         ClearSearchCommand     = new RelayCommand(_ => SearchText = string.Empty);
         ClearColorCommand      = new RelayCommand(_ => SelectedColor = string.Empty);
         ManageTagsCommand      = new RelayCommand(_ => OpenTagManagement());
+        ExportMarkdownCommand  = new RelayCommand(_ => ExportMarkdown());
     }
 
     private void RaiseCountAndEmptyStateChanged()
@@ -456,6 +458,47 @@ public class MainViewModel : ViewModelBase
             Owner = Application.Current?.MainWindow,
         };
         dlg.ShowDialog();
+    }
+
+    private void ExportMarkdown()
+    {
+        if (VisibleCards.Count == 0)
+        {
+            MessageBox.Show(
+                "エクスポート対象のカードがありません。",
+                "IdeaNest",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var defaultName = $"ideanest_export_{DateTime.Now:yyyyMMdd_HHmm}.md";
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = "Markdown files (*.md)|*.md|Text files (*.txt)|*.txt",
+            DefaultExt = ".md",
+            FileName = defaultName,
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        try
+        {
+            Services.MarkdownExportService.Export(
+                dlg.FileName,
+                VisibleCards,
+                SearchText,
+                SelectedTag,
+                SelectedColor,
+                ShowArchived);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"エクスポートに失敗しました:\n{ex.Message}",
+                "IdeaNest",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     public void RenameTag(string oldName, string newName)
