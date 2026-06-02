@@ -28,6 +28,10 @@
                 <MenuItem Header="保存(_S)" InputGestureText="Ctrl+S" Command="{Binding SaveCommand}" />
                 <MenuItem Header="名前を付けて保存(_A)..." InputGestureText="Ctrl+Shift+S" Command="{Binding SaveAsCommand}" />
                 <Separator />
+                <MenuItem Header="エクスポート(_E)">
+                    <MenuItem Header="Markdown風テキスト(_M)..." Command="{Binding ExportMarkdownCommand}" />
+                </MenuItem>
+                <Separator />
                 <MenuItem Header="終了(_X)" Click="OnExitClick" />
             </MenuItem>
             <MenuItem Header="編集(_E)">
