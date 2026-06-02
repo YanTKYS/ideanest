@@ -40,6 +40,7 @@ internal static class Program
             {
                 SearchText = "alpha",
                 SelectedTag = "UI",
+                SelectedColor = "blue",
                 ShowArchived = true,
                 WindowWidth = 1234,
                 WindowHeight = 789,
@@ -69,6 +70,7 @@ internal static class Program
         Check(loaded.Ideas[0].Tags.SequenceEqual(new[] { "UI", "開発" }), "tags preserved (UTF-8)");
         Check(loaded.Settings.SearchText == "alpha", "settings.searchText preserved");
         Check(loaded.Settings.SelectedTag == "UI", "settings.selectedTag preserved");
+        Check(loaded.Settings.SelectedColor == "blue", "settings.selectedColor preserved");
         Check(loaded.Settings.ShowArchived, "settings.showArchived preserved");
         Check(Math.Abs(loaded.Settings.WindowWidth - 1234) < 0.01, "settings.windowWidth preserved");
         Check(Math.Abs(loaded.Settings.WindowHeight - 789) < 0.01, "settings.windowHeight preserved");

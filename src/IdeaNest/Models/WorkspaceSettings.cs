@@ -10,6 +10,9 @@ public class WorkspaceSettings
     [JsonPropertyName("selectedTag")]
     public string SelectedTag { get; set; } = string.Empty;
 
+    [JsonPropertyName("selectedColor")]
+    public string SelectedColor { get; set; } = string.Empty;
+
     [JsonPropertyName("showArchived")]
     public bool ShowArchived { get; set; }
 
