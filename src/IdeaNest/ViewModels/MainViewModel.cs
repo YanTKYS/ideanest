@@ -22,10 +22,6 @@ public class MainViewModel : ViewModelBase
     private string _selectedTag = string.Empty;
     private bool _showArchived;
 
-    private string _newTitle = string.Empty;
-    private string _newBody = string.Empty;
-    private string _newTags = string.Empty;
-
     public ObservableCollection<IdeaCardViewModel> AllCards { get; } = new();
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
     public ObservableCollection<string> AvailableTags { get; } = new();
@@ -93,10 +89,6 @@ public class MainViewModel : ViewModelBase
             }
         }
     }
-
-    public string NewTitle { get => _newTitle; set => SetField(ref _newTitle, value); }
-    public string NewBody  { get => _newBody;  set => SetField(ref _newBody,  value); }
-    public string NewTags  { get => _newTags;  set => SetField(ref _newTags,  value); }
 
     public WorkspaceSettings Settings => _workspace.Settings;
 
@@ -227,34 +219,38 @@ public class MainViewModel : ViewModelBase
 
     private void AddIdea()
     {
-        var body = NewBody?.Trim() ?? string.Empty;
-        var title = NewTitle?.Trim() ?? string.Empty;
-        if (string.IsNullOrEmpty(body) && string.IsNullOrEmpty(title))
+        var draft = new Idea();
+        var vm = new EditIdeaViewModel(draft);
+        var dlg = new EditIdeaWindow
         {
+            Title = "新規アイデア",
+            DataContext = vm,
+            Owner = Application.Current?.MainWindow,
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        vm.ApplyTo(draft);
+
+        var title = draft.Title?.Trim() ?? string.Empty;
+        var body  = draft.Body?.Trim()  ?? string.Empty;
+        if (string.IsNullOrEmpty(title) && string.IsNullOrEmpty(body))
+        {
+            // タイトル・本文が両方空のカードは保存しない (空入力 → キャンセル相当)
             return;
         }
 
         if (string.IsNullOrEmpty(title))
         {
             var firstLine = body.Split('\n').FirstOrDefault()?.Trim() ?? string.Empty;
-            title = firstLine.Length > 40 ? firstLine[..40] : firstLine;
+            draft.Title = firstLine.Length > 40 ? firstLine[..40] : firstLine;
         }
 
-        var idea = new Idea
-        {
-            Title = title,
-            Body = body,
-            Tags = (NewTags ?? string.Empty)
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Distinct()
-                .ToList(),
-        };
-        _workspace.Ideas.Add(idea);
-        AllCards.Add(new IdeaCardViewModel(idea));
+        var now = DateTime.Now;
+        draft.CreatedAt = now;
+        draft.UpdatedAt = now;
 
-        NewTitle = string.Empty;
-        NewBody = string.Empty;
-        NewTags = string.Empty;
+        _workspace.Ideas.Add(draft);
+        AllCards.Add(new IdeaCardViewModel(draft));
         MarkDirty();
         RefreshTags();
         RefreshVisible();
@@ -264,7 +260,12 @@ public class MainViewModel : ViewModelBase
     {
         if (card == null) return;
         var vm = new EditIdeaViewModel(card.Model);
-        var dlg = new EditIdeaWindow { DataContext = vm, Owner = Application.Current?.MainWindow };
+        var dlg = new EditIdeaWindow
+        {
+            Title = "アイデア編集",
+            DataContext = vm,
+            Owner = Application.Current?.MainWindow,
+        };
         var result = dlg.ShowDialog();
         if (result == true)
         {

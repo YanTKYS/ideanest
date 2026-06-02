@@ -13,7 +13,49 @@
             <Setter Property="Padding" Value="4" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
+
+        <Style x:Key="FabButton" TargetType="Button">
+            <Setter Property="Width"  Value="56" />
+            <Setter Property="Height" Value="56" />
+            <Setter Property="Background"  Value="#3F8EFC" />
+            <Setter Property="Foreground"  Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize"    Value="28" />
+            <Setter Property="FontWeight"  Value="Bold" />
+            <Setter Property="Cursor"      Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="28"
+                                Background="{TemplateBinding Background}">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#000000" Opacity="0.35"
+                                                  BlurRadius="10" ShadowDepth="2" />
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2F7DEB" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2566C6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
+
+    <Window.InputBindings>
+        <KeyBinding Modifiers="Ctrl"        Key="N" Command="{Binding NewWorkspaceCommand}" />
+        <KeyBinding Modifiers="Ctrl"        Key="O" Command="{Binding OpenCommand}" />
+        <KeyBinding Modifiers="Ctrl"        Key="S" Command="{Binding SaveCommand}" />
+        <KeyBinding Modifiers="Ctrl+Shift"  Key="S" Command="{Binding SaveAsCommand}" />
+        <KeyBinding Modifiers="Ctrl+Shift"  Key="N" Command="{Binding AddIdeaCommand}" />
+    </Window.InputBindings>
 
     <DockPanel>
         <!-- Menu -->
@@ -28,7 +70,8 @@
                 <MenuItem Header="終了(_X)" Click="OnExitClick" />
             </MenuItem>
             <MenuItem Header="編集(_E)">
-                <MenuItem Header="新規カード追加" Command="{Binding AddIdeaCommand}" />
+                <MenuItem Header="新規カード追加(_N)" InputGestureText="Ctrl+Shift+N"
+                          Command="{Binding AddIdeaCommand}" />
             </MenuItem>
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="アーカイブを表示" IsCheckable="True" IsChecked="{Binding ShowArchived, Mode=TwoWay}" />
@@ -52,39 +95,6 @@
                 <CheckBox Grid.Column="3" Content="アーカイブを表示"
                           IsChecked="{Binding ShowArchived, Mode=TwoWay}"
                           VerticalAlignment="Center" Margin="12,0,0,0" />
-            </Grid>
-        </Border>
-
-        <!-- Quick add bar -->
-        <Border DockPanel.Dock="Top" Background="#FFFDF0" BorderBrush="#E5DDB0" BorderThickness="0,0,0,1" Padding="8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <TextBox Grid.Row="0" Grid.Column="0"
-                         Text="{Binding NewTitle, UpdateSourceTrigger=PropertyChanged}"
-                         FontWeight="Bold" Margin="0,0,8,4"
-                         ToolTip="タイトル (空欄の場合は本文から自動生成)" />
-                <TextBox Grid.Row="1" Grid.Column="0"
-                         Text="{Binding NewBody, UpdateSourceTrigger=PropertyChanged}"
-                         AcceptsReturn="True" TextWrapping="Wrap"
-                         MinHeight="48" MaxHeight="120" VerticalScrollBarVisibility="Auto"
-                         Margin="0,0,8,4"
-                         ToolTip="アイデア本文" />
-                <TextBox Grid.Row="2" Grid.Column="0"
-                         Text="{Binding NewTags, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="0,0,8,0"
-                         ToolTip="タグをカンマ区切りで入力 (例: UI, 開発)" />
-                <Button Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
-                        Content="追加" Width="80"
-                        Command="{Binding AddIdeaCommand}"
-                        Style="{StaticResource FlatButton}" />
             </Grid>
         </Border>
 
@@ -112,7 +122,8 @@
                 </DockPanel>
             </Border>
 
-            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="8">
+            <Grid Grid.Column="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                 <ItemsControl ItemsSource="{Binding VisibleCards}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -174,6 +185,15 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
+
+            <!-- Floating action button: 新規アイデア -->
+            <Button Style="{StaticResource FabButton}"
+                    Content="＋"
+                    ToolTip="新しいアイデアを追加 (Ctrl+Shift+N)"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,24,24"
+                    Command="{Binding AddIdeaCommand}" />
+            </Grid>
         </Grid>
     </DockPanel>
 </Window>
