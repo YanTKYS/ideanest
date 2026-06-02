@@ -204,16 +204,18 @@ public class MainViewModel : ViewModelBase
     public bool ConfirmDiscardChanges()
     {
         if (!IsDirty) return true;
-        var result = MessageBox.Show(
-            "未保存の変更があります。保存しますか？",
-            "IdeaNest",
-            MessageBoxButton.YesNoCancel,
-            MessageBoxImage.Warning);
+        var result = ConfirmWindow.ShowYesNoCancel(
+            Application.Current?.MainWindow,
+            "未保存の変更があります",
+            "保存していない変更があります。保存しますか？",
+            primaryText: "保存して続行",
+            secondaryText: "保存しない",
+            cancelText: "キャンセル");
         return result switch
         {
-            MessageBoxResult.Yes    => Save(),
-            MessageBoxResult.No     => true,
-            _                       => false,
+            ConfirmResult.Primary    => Save(),
+            ConfirmResult.Secondary  => true,
+            _                        => false,
         };
     }
 
@@ -281,8 +283,13 @@ public class MainViewModel : ViewModelBase
     private void DeleteIdea(IdeaCardViewModel? card)
     {
         if (card == null) return;
-        var ok = MessageBox.Show("このカードを削除しますか？", "IdeaNest", MessageBoxButton.OKCancel, MessageBoxImage.Question);
-        if (ok != MessageBoxResult.OK) return;
+        var ok = ConfirmWindow.ShowOkCancel(
+            Application.Current?.MainWindow,
+            "カードを削除しますか？",
+            $"「{card.DisplayTitle}」を削除します。この操作は元に戻せません。",
+            primaryText: "削除",
+            cancelText: "キャンセル");
+        if (ok != ConfirmResult.Primary) return;
         _workspace.Ideas.Remove(card.Model);
         AllCards.Remove(card);
         MarkDirty();

@@ -42,12 +42,48 @@
                      Text="{Binding TagsText, UpdateSourceTrigger=PropertyChanged}"
                      Margin="0,0,0,16" />
 
-            <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
-                <TextBlock Text="色" Style="{StaticResource FieldLabelStyle}"
-                           Margin="0,0,12,0" VerticalAlignment="Center" />
-                <ComboBox Width="140" Padding="8,4"
-                          ItemsSource="{Binding AvailableColors}"
-                          SelectedItem="{Binding Color}" />
+            <StackPanel Grid.Row="6" Orientation="Vertical" Margin="0,0,0,16">
+                <TextBlock Text="色" Style="{StaticResource FieldLabelStyle}" />
+                <ListBox ItemsSource="{Binding AvailableColors}"
+                         SelectedItem="{Binding Color}"
+                         Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Margin" Value="0,0,8,0" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="Cursor" Value="Hand" />
+                            <Setter Property="ToolTip" Value="{Binding}" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Ring" Width="34" Height="34" CornerRadius="17"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent" BorderThickness="2"
+                                                Padding="3">
+                                            <Ellipse Fill="{Binding Converter={StaticResource ColorNameToBrush}}"
+                                                     Stroke="#D1D5DB" StrokeThickness="1" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Ring" Property="BorderBrush" Value="#FFE4D2" />
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Ring" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
             </StackPanel>
 
             <StackPanel Grid.Row="7" Orientation="Horizontal" Margin="0,0,0,20">

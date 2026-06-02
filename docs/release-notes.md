@@ -22,6 +22,11 @@
   上部操作バーの余白を拡げた。
 - 編集ダイアログを白カードの上に乗せたシンプルなフォーム形式に変更し、
   `OK` を主ボタン (アクセント色)、`キャンセル` をアウトライン (副ボタン) に差し替えた。
+- 編集ダイアログの色選択を、文字列 (`yellow` 等) を表示する標準 `ComboBox` から、
+  淡いパステルの丸スウォッチ並びに変更。選択中は暖色アクセントのリングが付く。
+- 未保存変更時の確認・カード削除確認のダイアログを、標準 `MessageBox` から、
+  メイン画面と同じカード風の独自ダイアログ (`ConfirmWindow`) に置き換えた。
+  ボタンには主/副スタイルが適用され、操作の選択肢が見た目で区別できる。
 - 共通スタイル (`CardContainerStyle` / `PrimaryButtonStyle` /
   `SecondaryButtonStyle` / `IconButtonStyle` / `SearchTextBoxStyle` /
   `TagChipStyle` / `FloatingAddButtonStyle`) を `App.xaml` に定義した。
