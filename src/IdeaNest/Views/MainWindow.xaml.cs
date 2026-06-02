@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Input;
 using IdeaNest.ViewModels;
 
 namespace IdeaNest.Views;
@@ -18,6 +19,33 @@ public partial class MainWindow : Window
         Loaded += OnLoaded;
         SizeChanged += OnSizeChanged;
         Closing += OnClosing;
+        PreviewKeyDown += OnWindowPreviewKeyDown;
+    }
+
+    private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            SearchBox.Focus();
+            SearchBox.SelectAll();
+            e.Handled = true;
+        }
+    }
+
+    private void OnSearchBoxPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            if (!string.IsNullOrEmpty(SearchBox.Text))
+            {
+                _vm.SearchText = string.Empty;
+            }
+            else
+            {
+                Keyboard.ClearFocus();
+            }
+            e.Handled = true;
+        }
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
