@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'リリースバージョン (例: 0.1.0)'
+        required: true
+        default: '0.1.0'
+
+jobs:
+  release:
+    name: Build & Publish (windows-latest)
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore src/IdeaNest/IdeaNest.csproj
+
+      - name: Publish (win-x64, self-contained)
+        run: >
+          dotnet publish src/IdeaNest/IdeaNest.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:Version=${{ github.event.inputs.version }}
+          --output publish/win-x64
+
+      - name: Package zip
+        shell: pwsh
+        run: |
+          $version = '${{ github.event.inputs.version }}'
+          Compress-Archive -Path publish/win-x64/* -DestinationPath "IdeaNest-$version-win-x64.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IdeaNest-${{ github.event.inputs.version }}-win-x64
+          path: IdeaNest-${{ github.event.inputs.version }}-win-x64.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: IdeaNest v${{ github.event.inputs.version }}
+          draft: true
+          files: IdeaNest-${{ github.event.inputs.version }}-win-x64.zip

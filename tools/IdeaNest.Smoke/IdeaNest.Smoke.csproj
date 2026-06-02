@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>IdeaNest.Smoke</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\IdeaNest\Models\Idea.cs" Link="Models\Idea.cs" />
+    <Compile Include="..\..\src\IdeaNest\Models\Workspace.cs" Link="Models\Workspace.cs" />
+    <Compile Include="..\..\src\IdeaNest\Models\WorkspaceSettings.cs" Link="Models\WorkspaceSettings.cs" />
+    <Compile Include="..\..\src\IdeaNest\Services\WorkspaceService.cs" Link="Services\WorkspaceService.cs" />
+  </ItemGroup>
+
+</Project>
