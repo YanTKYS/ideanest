@@ -92,13 +92,14 @@ internal static class Program
               "version": "0.1.0",
               "workspaceName": "Broken",
               "ideas": [
+                null,
                 { "id": "", "title": null, "body": null, "tags": null, "color": "" },
                 { "id": "x", "title": "ok", "body": "ok", "tags": ["a", "", "  "], "color": "blue" }
               ]
             }
             """);
         var broken = WorkspaceService.Load(brokenPath);
-        Check(broken.Ideas.Count == 2, "broken: ideas count");
+        Check(broken.Ideas.Count == 2, "broken: null element in array is dropped");
         Check(!string.IsNullOrEmpty(broken.Ideas[0].Id), "broken: empty id is regenerated");
         Check(broken.Ideas[0].Title == string.Empty, "broken: null title becomes empty");
         Check(broken.Ideas[0].Body == string.Empty, "broken: null body becomes empty");
