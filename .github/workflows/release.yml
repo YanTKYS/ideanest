@@ -53,7 +53,6 @@ jobs:
             "-p:IncludeAllContentForSelfExtract=true" `
             "-p:EnableCompressionInSingleFile=true" `
             "-p:DebugType=embedded" `
-            "-p:SatelliteResourceLanguages=ja;en" `
             "-p:Version=${{ env.NUMERIC }}" `
             "-p:AssemblyVersion=${{ env.NUMERIC }}.0" `
             "-p:FileVersion=${{ env.NUMERIC }}.0" `
