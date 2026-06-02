@@ -85,6 +85,61 @@
             </Grid>
         </Border>
 
+        <!-- Color filter strip -->
+        <Border DockPanel.Dock="Top" Background="Transparent" Padding="20,0,20,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="色:" Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <Button Content="(すべて)"
+                        Command="{Binding ClearColorCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        Padding="8,4" Margin="0,0,8,0"
+                        ToolTip="色フィルタを解除" />
+                <ListBox ItemsSource="{Binding ColorItems}"
+                         SelectedValue="{Binding SelectedColor, Mode=TwoWay}"
+                         SelectedValuePath="Name"
+                         Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Margin" Value="0,0,4,0" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="Cursor" Value="Hand" />
+                            <Setter Property="ToolTip" Value="{Binding DisplayName}" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Ring" Width="26" Height="26" CornerRadius="13"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent" BorderThickness="2"
+                                                Padding="2">
+                                            <Ellipse Fill="{Binding Name, Converter={StaticResource ColorNameToBrush}}"
+                                                     Stroke="#D1D5DB" StrokeThickness="1" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Ring" Property="BorderBrush" Value="#FFE4D2" />
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Ring" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+            </StackPanel>
+        </Border>
+
         <!-- Body: tag list + cards -->
         <Grid>
             <Grid.ColumnDefinitions>

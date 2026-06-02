@@ -20,12 +20,24 @@ public class MainViewModel : ViewModelBase
     private bool _isDirty;
     private string _searchText = string.Empty;
     private string _selectedTag = string.Empty;
+    private string _selectedColor = string.Empty;
     private bool _showArchived;
 
     public ObservableCollection<IdeaCardViewModel> AllCards { get; } = new();
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
     public ObservableCollection<string> AvailableTags { get; } = new();
     public ObservableCollection<TagItemViewModel> TagItems { get; } = new();
+    public ObservableCollection<ColorFilterItemViewModel> ColorItems { get; } = new()
+    {
+        new ColorFilterItemViewModel("white",  "白"),
+        new ColorFilterItemViewModel("yellow", "黄"),
+        new ColorFilterItemViewModel("green",  "緑"),
+        new ColorFilterItemViewModel("blue",   "青"),
+        new ColorFilterItemViewModel("pink",   "ピンク"),
+        new ColorFilterItemViewModel("purple", "紫"),
+        new ColorFilterItemViewModel("orange", "オレンジ"),
+        new ColorFilterItemViewModel("gray",   "グレー"),
+    };
 
     public string Title
     {
@@ -77,6 +89,20 @@ public class MainViewModel : ViewModelBase
         }
     }
 
+    public string SelectedColor
+    {
+        get => _selectedColor;
+        set
+        {
+            if (SetField(ref _selectedColor, value ?? string.Empty))
+            {
+                _workspace.Settings.SelectedColor = _selectedColor;
+                RefreshVisible();
+                MarkDirty();
+            }
+        }
+    }
+
     public bool ShowArchived
     {
         get => _showArchived;
@@ -105,6 +131,7 @@ public class MainViewModel : ViewModelBase
     public ICommand SelectTagCommand { get; }
     public ICommand ClearTagCommand { get; }
     public ICommand ClearSearchCommand { get; }
+    public ICommand ClearColorCommand { get; }
     public ICommand ManageTagsCommand { get; }
 
     public int TotalCount => AllCards.Count;
@@ -112,7 +139,8 @@ public class MainViewModel : ViewModelBase
 
     public bool HasActiveFilter =>
         !string.IsNullOrEmpty((SearchText ?? string.Empty).Trim()) ||
-        !string.IsNullOrEmpty((SelectedTag ?? string.Empty).Trim());
+        !string.IsNullOrEmpty((SelectedTag ?? string.Empty).Trim()) ||
+        !string.IsNullOrEmpty((SelectedColor ?? string.Empty).Trim());
 
     public string CountText
     {
@@ -168,6 +196,7 @@ public class MainViewModel : ViewModelBase
         SelectTagCommand       = new RelayCommand(p => SelectedTag = p as string ?? string.Empty);
         ClearTagCommand        = new RelayCommand(_ => SelectedTag = string.Empty);
         ClearSearchCommand     = new RelayCommand(_ => SearchText = string.Empty);
+        ClearColorCommand      = new RelayCommand(_ => SelectedColor = string.Empty);
         ManageTagsCommand      = new RelayCommand(_ => OpenTagManagement());
     }
 
@@ -261,6 +290,7 @@ public class MainViewModel : ViewModelBase
         }
         _workspace.Settings.SearchText = SearchText;
         _workspace.Settings.SelectedTag = SelectedTag;
+        _workspace.Settings.SelectedColor = SelectedColor;
         _workspace.Settings.ShowArchived = ShowArchived;
     }
 
@@ -390,9 +420,11 @@ public class MainViewModel : ViewModelBase
         }
         _searchText = _workspace.Settings.SearchText ?? string.Empty;
         _selectedTag = _workspace.Settings.SelectedTag ?? string.Empty;
+        _selectedColor = _workspace.Settings.SelectedColor ?? string.Empty;
         _showArchived = _workspace.Settings.ShowArchived;
         OnPropertyChanged(nameof(SearchText));
         OnPropertyChanged(nameof(SelectedTag));
+        OnPropertyChanged(nameof(SelectedColor));
         OnPropertyChanged(nameof(ShowArchived));
         RefreshTags();
         RefreshVisible();
@@ -480,6 +512,7 @@ public class MainViewModel : ViewModelBase
     {
         var query = (SearchText ?? string.Empty).Trim();
         var tag = (SelectedTag ?? string.Empty).Trim();
+        var color = (SelectedColor ?? string.Empty).Trim();
 
         IEnumerable<IdeaCardViewModel> items = AllCards;
 
@@ -491,6 +524,13 @@ public class MainViewModel : ViewModelBase
         if (!string.IsNullOrEmpty(tag))
         {
             items = items.Where(c => c.Tags.Any(t => string.Equals(t, tag, StringComparison.Ordinal)));
+        }
+
+        if (!string.IsNullOrEmpty(color))
+        {
+            items = items.Where(c => string.Equals(
+                string.IsNullOrWhiteSpace(c.Color) ? "yellow" : c.Color,
+                color, StringComparison.Ordinal));
         }
 
         if (!string.IsNullOrEmpty(query))
