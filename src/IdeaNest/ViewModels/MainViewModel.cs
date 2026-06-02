@@ -103,6 +103,53 @@ public class MainViewModel : ViewModelBase
     public ICommand ToggleArchiveCommand { get; }
     public ICommand SelectTagCommand { get; }
     public ICommand ClearTagCommand { get; }
+    public ICommand ClearSearchCommand { get; }
+
+    public int TotalCount => AllCards.Count;
+    public int VisibleCount => VisibleCards.Count;
+
+    public bool HasActiveFilter =>
+        !string.IsNullOrEmpty((SearchText ?? string.Empty).Trim()) ||
+        !string.IsNullOrEmpty((SelectedTag ?? string.Empty).Trim());
+
+    public string CountText
+    {
+        get
+        {
+            if (HasActiveFilter)
+            {
+                return $"{VisibleCount}件 / 全{TotalCount}件";
+            }
+            return $"{TotalCount}件";
+        }
+    }
+
+    public bool ShowEmptyState => VisibleCount == 0;
+
+    public string EmptyStateTitle
+    {
+        get
+        {
+            if (TotalCount == 0) return "まだアイデアがありません";
+            if (HasActiveFilter) return "条件に一致するカードがありません";
+            if (ShowArchived) return "アーカイブ済みカードはありません";
+            return "表示できるカードがありません";
+        }
+    }
+
+    public string EmptyStateMessage
+    {
+        get
+        {
+            if (TotalCount == 0)
+                return "右下の「＋」ボタン (または Ctrl+Shift+N) から最初のアイデアを追加できます。";
+            if (HasActiveFilter)
+                return "検索語やタグを変更してください。";
+            if (ShowArchived)
+                return "カードをアーカイブすると、ここに表示されます。";
+            return "「アーカイブを表示」を有効にすると、アーカイブ済みカードが見られます。";
+        }
+    }
 
     public MainViewModel()
     {
@@ -117,6 +164,18 @@ public class MainViewModel : ViewModelBase
         ToggleArchiveCommand   = new RelayCommand(p => ToggleArchive(p as IdeaCardViewModel));
         SelectTagCommand       = new RelayCommand(p => SelectedTag = p as string ?? string.Empty);
         ClearTagCommand        = new RelayCommand(_ => SelectedTag = string.Empty);
+        ClearSearchCommand     = new RelayCommand(_ => SearchText = string.Empty);
+    }
+
+    private void RaiseCountAndEmptyStateChanged()
+    {
+        OnPropertyChanged(nameof(TotalCount));
+        OnPropertyChanged(nameof(VisibleCount));
+        OnPropertyChanged(nameof(HasActiveFilter));
+        OnPropertyChanged(nameof(CountText));
+        OnPropertyChanged(nameof(ShowEmptyState));
+        OnPropertyChanged(nameof(EmptyStateTitle));
+        OnPropertyChanged(nameof(EmptyStateMessage));
     }
 
     private void NewWorkspace()
@@ -285,8 +344,9 @@ public class MainViewModel : ViewModelBase
         if (card == null) return;
         var ok = ConfirmWindow.ShowOkCancel(
             Application.Current?.MainWindow,
-            "カードを削除しますか？",
-            $"「{card.DisplayTitle}」を削除します。この操作は元に戻せません。",
+            "このカードを削除しますか？",
+            $"「{card.DisplayTitle}」を削除します。削除すると元に戻せません。\n\n" +
+            "不要な場合は、削除ではなくアーカイブ (📥) も検討してください。",
             primaryText: "削除",
             cancelText: "キャンセル");
         if (ok != ConfirmResult.Primary) return;
@@ -379,6 +439,8 @@ public class MainViewModel : ViewModelBase
 
         VisibleCards.Clear();
         foreach (var c in ordered) VisibleCards.Add(c);
+
+        RaiseCountAndEmptyStateChanged();
     }
 
     public void LoadStartup()

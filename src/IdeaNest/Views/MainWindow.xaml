@@ -46,19 +46,34 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBox Grid.Column="0"
-                         Style="{StaticResource SearchTextBoxStyle}"
-                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         ToolTip="タイトル・本文・タグを検索" />
-                <Border Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0"
+                <Grid Grid.Column="0">
+                    <TextBox x:Name="SearchBox"
+                             Style="{StaticResource SearchTextBoxStyle}"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="タイトル・本文・タグを検索 (Ctrl+F)"
+                             PreviewKeyDown="OnSearchBoxPreviewKeyDown"
+                             Padding="12,9,36,9" />
+                    <Button Content="✕"
+                            Style="{StaticResource IconButtonStyle}"
+                            Command="{Binding ClearSearchCommand}"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Margin="0,0,4,0"
+                            ToolTip="検索をクリア (Esc)"
+                            Visibility="{Binding SearchText, Converter={StaticResource StringToVis}}" />
+                </Grid>
+                <TextBlock Grid.Column="1" Text="{Binding CountText}"
+                           Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"
+                           VerticalAlignment="Center" Margin="14,0,0,0" />
+                <Border Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0"
                         Visibility="{Binding SelectedTag, Converter={StaticResource StringToVis}}"
                         Background="{StaticResource ChipBackgroundBrush}"
                         CornerRadius="9" Padding="10,4">
                     <TextBlock Text="{Binding SelectedTag, StringFormat='#{0}'}"
                                Foreground="{StaticResource ChipForegroundBrush}" FontSize="12" />
                 </Border>
-                <CheckBox Grid.Column="2" Content="アーカイブを表示"
+                <CheckBox Grid.Column="3" Content="アーカイブを表示"
                           IsChecked="{Binding ShowArchived, Mode=TwoWay}"
                           Foreground="{StaticResource TextSecondaryBrush}"
                           VerticalAlignment="Center" Margin="16,0,0,0" />
@@ -126,7 +141,8 @@
             </Border>
 
             <Grid Grid.Column="1">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,8,12,12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,8,12,12"
+                              Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisInverse}}">
                     <ItemsControl ItemsSource="{Binding VisibleCards}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -216,6 +232,21 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+
+                <!-- Empty state placeholder -->
+                <StackPanel Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVis}}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            MaxWidth="420">
+                    <TextBlock Text="{Binding EmptyStateTitle}"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="16" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" Margin="0,0,0,8" />
+                    <TextBlock Text="{Binding EmptyStateMessage}"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="13" TextWrapping="Wrap"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               LineHeight="20" />
+                </StackPanel>
 
                 <!-- Floating action button: 新規アイデア -->
                 <Button Style="{StaticResource FloatingAddButtonStyle}"
