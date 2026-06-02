@@ -21,7 +21,35 @@ public static class WorkspaceService
             ?? throw new InvalidDataException("Invalid .ideanest file");
         workspace.Ideas ??= new();
         workspace.Settings ??= new();
+        foreach (var idea in workspace.Ideas)
+        {
+            Normalize(idea);
+        }
         return workspace;
+    }
+
+    private static void Normalize(Idea idea)
+    {
+        if (string.IsNullOrEmpty(idea.Id))
+        {
+            idea.Id = Guid.NewGuid().ToString();
+        }
+        idea.Title ??= string.Empty;
+        idea.Body ??= string.Empty;
+        idea.Tags ??= new();
+        idea.Tags.RemoveAll(string.IsNullOrWhiteSpace);
+        if (string.IsNullOrWhiteSpace(idea.Color))
+        {
+            idea.Color = "yellow";
+        }
+        if (idea.CreatedAt == default)
+        {
+            idea.CreatedAt = DateTime.Now;
+        }
+        if (idea.UpdatedAt == default)
+        {
+            idea.UpdatedAt = idea.CreatedAt;
+        }
     }
 
     public static void Save(string path, Workspace workspace)
