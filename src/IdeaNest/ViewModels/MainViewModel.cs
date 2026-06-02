@@ -139,6 +139,8 @@ public class MainViewModel : ViewModelBase
     public ICommand ExportMarkdownCommand { get; }
     public ICommand CopyCardMarkdownCommand { get; }
     public ICommand CopyAllMarkdownCommand { get; }
+    public ICommand ExportNoteNestCommand { get; }
+    public ICommand CopyNoteNestCommand { get; }
 
     public string StatusMessage
     {
@@ -213,6 +215,8 @@ public class MainViewModel : ViewModelBase
         ExportMarkdownCommand     = new RelayCommand(_ => ExportMarkdown());
         CopyCardMarkdownCommand   = new RelayCommand(p => CopyCardMarkdown(p as IdeaCardViewModel));
         CopyAllMarkdownCommand    = new RelayCommand(_ => CopyAllMarkdown());
+        ExportNoteNestCommand     = new RelayCommand(_ => ExportNoteNest());
+        CopyNoteNestCommand       = new RelayCommand(_ => CopyNoteNest());
     }
 
     private void RaiseCountAndEmptyStateChanged()
@@ -550,6 +554,75 @@ public class MainViewModel : ViewModelBase
         {
             Clipboard.SetText(text);
             ShowStatus($"表示中の{VisibleCards.Count}件をコピーしました。");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"クリップボードへのコピーに失敗しました:\n{ex.Message}",
+                "IdeaNest",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void ExportNoteNest()
+    {
+        if (VisibleCards.Count == 0)
+        {
+            MessageBox.Show(
+                "NoteNest向けに出力するカードがありません。",
+                "IdeaNest",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var defaultName = $"ideanest_notenest_{DateTime.Now:yyyyMMdd_HHmm}.md";
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = "Markdown files (*.md)|*.md|Text files (*.txt)|*.txt",
+            DefaultExt = ".md",
+            FileName = defaultName,
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        try
+        {
+            NoteNestExportService.Export(
+                dlg.FileName,
+                VisibleCards,
+                SearchText,
+                SelectedTag,
+                SelectedColor,
+                ShowArchived);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"エクスポートに失敗しました:\n{ex.Message}",
+                "IdeaNest",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void CopyNoteNest()
+    {
+        if (VisibleCards.Count == 0)
+        {
+            MessageBox.Show(
+                "NoteNest向けに出力するカードがありません。",
+                "IdeaNest",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+        var text = NoteNestExportService.FormatAll(
+            VisibleCards, SearchText, SelectedTag, SelectedColor, ShowArchived);
+        try
+        {
+            Clipboard.SetText(text);
+            ShowStatus($"表示中の{VisibleCards.Count}件をNoteNest向け形式でコピーしました。");
         }
         catch (Exception ex)
         {
