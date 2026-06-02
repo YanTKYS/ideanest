@@ -36,6 +36,8 @@
                 <Separator />
                 <MenuItem Header="検索(_F)" InputGestureText="Ctrl+F"
                           Click="OnFocusSearchClick" />
+                <Separator />
+                <MenuItem Header="タグ管理(_T)..." Command="{Binding ManageTagsCommand}" />
             </MenuItem>
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="アーカイブを表示" IsCheckable="True" IsChecked="{Binding ShowArchived, Mode=TwoWay}" />
@@ -102,8 +104,9 @@
                             HorizontalContentAlignment="Left"
                             HorizontalAlignment="Stretch"
                             Padding="8,6" Margin="0,0,0,4" />
-                    <ListBox ItemsSource="{Binding AvailableTags}"
-                             SelectedItem="{Binding SelectedTag, Mode=TwoWay}"
+                    <ListBox ItemsSource="{Binding TagItems}"
+                             SelectedValue="{Binding SelectedTag, Mode=TwoWay}"
+                             SelectedValuePath="Name"
                              BorderThickness="0" Background="Transparent"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemContainerStyle>
@@ -136,7 +139,19 @@
                         </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding StringFormat='#{0}'}" FontSize="12" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding DisplayName}" FontSize="12"
+                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding Count}" FontSize="11"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Margin="6,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using IdeaNest.Models;
@@ -13,6 +15,23 @@ public static class WorkspaceService
         WriteIndented = true,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
+
+    public static string NormalizeTag(string raw)
+    {
+        var s = (raw ?? string.Empty).Trim();
+        // Strip one or more leading '#' characters
+        while (s.StartsWith('#')) s = s[1..].TrimStart();
+        return s;
+    }
+
+    public static List<string> NormalizeTags(IEnumerable<string> rawTags)
+    {
+        return (rawTags ?? Enumerable.Empty<string>())
+            .Select(NormalizeTag)
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+    }
 
     public static Workspace Load(string path)
     {
@@ -36,9 +55,8 @@ public static class WorkspaceService
             idea.Id = Guid.NewGuid().ToString();
         }
         idea.Title ??= string.Empty;
-        idea.Body ??= string.Empty;
-        idea.Tags ??= new();
-        idea.Tags.RemoveAll(string.IsNullOrWhiteSpace);
+        idea.Body   ??= string.Empty;
+        idea.Tags = NormalizeTags(idea.Tags);
         if (string.IsNullOrWhiteSpace(idea.Color))
         {
             idea.Color = "yellow";
