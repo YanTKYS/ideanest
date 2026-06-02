@@ -3,134 +3,111 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'リリースタグ (v から始める。例: v0.1.0)'
+      tag:
+        description: 'Release tag (e.g. v0.1.0)'
         required: true
-        default: 'v0.1.0'
+        type: string
 
 jobs:
   release:
-    name: Build & Publish (windows-latest)
     runs-on: windows-latest
-
     permissions:
       contents: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Validate version & derive numeric version
-        shell: pwsh
-        run: |
-          $tag = '${{ github.event.inputs.version }}'.Trim()
-          if ($tag -notmatch '^v\d+\.\d+\.\d+([.\-+].+)?$') {
-            Write-Error "version は 'v0.1.0' のように 'v' から始めてください。入力値: '$tag'"
-            exit 1
-          }
-          $numeric = $tag.Substring(1)
-          "TAG=$tag"             | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "NUMERIC=$numeric"     | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "ZIP_NAME=IdeaNest-$tag-win-x64.zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore
-        run: dotnet restore src/IdeaNest/IdeaNest.csproj
+      - name: Extract release notes
+        id: notes
+        shell: python
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          import re, os, sys
 
-      - name: Publish (win-x64, self-contained single exe)
+          tag = os.environ["RELEASE_TAG"]
+          with open("docs/release-notes.md", "r", encoding="utf-8") as f:
+              content = f.read()
+
+          pattern = r'^## (' + re.escape(tag) + r'[^\n]*)\n(.*?)(?=\n^## |\Z)'
+          m = re.search(pattern, content, re.MULTILINE | re.DOTALL)
+          if not m:
+              print(f"::error::Tag '{tag}' not found in docs/release-notes.md")
+              sys.exit(1)
+
+          title = m.group(1).strip()
+          body  = m.group(2).strip()
+
+          with open("release_body.txt", "w", encoding="utf-8") as f:
+              f.write(body)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"title={title}\n")
+
+      - name: Publish self-contained single-file
         shell: pwsh
         run: |
           dotnet publish src/IdeaNest/IdeaNest.csproj `
-            --configuration Release `
-            --runtime win-x64 `
-            --self-contained true `
-            "-p:PublishSingleFile=true" `
-            "-p:IncludeNativeLibrariesForSelfExtract=true" `
-            "-p:IncludeAllContentForSelfExtract=true" `
-            "-p:EnableCompressionInSingleFile=true" `
-            "-p:DebugType=embedded" `
-            "-p:SatelliteResourceLanguages=ja;en" `
-            "-p:Version=${{ env.NUMERIC }}" `
-            "-p:AssemblyVersion=${{ env.NUMERIC }}.0" `
-            "-p:FileVersion=${{ env.NUMERIC }}.0" `
-            --output publish/win-x64
+            -c Release `
+            -r win-x64 `
+            --self-contained `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:DebugType=none `
+            -p:DebugSymbols=false `
+            -o publish
 
-      - name: Clean publish output & verify layout
+      - name: Package as ZIP
+        id: package
         shell: pwsh
         run: |
-          $dir = 'publish/win-x64'
-          Get-ChildItem $dir -Recurse -Filter *.pdb | Remove-Item -Force -ErrorAction SilentlyContinue
-          Get-ChildItem $dir -Recurse -Filter *.xml | Remove-Item -Force -ErrorAction SilentlyContinue
+          $tag     = "${{ inputs.tag }}"
+          $dirName = "IdeaNest-$tag-win-x64"
+          $stageDir = Join-Path "stage" $dirName
 
-          # フォールバック: PublishSingleFile で吸い込めなかった DLL/JSON が root に
-          # 残った場合は runtime/ サブフォルダに退避し、ZIP ルートを exe + (任意で runtime/) に保つ。
-          # 注意: 単一 exe + IncludeNativeLibrariesForSelfExtract=true の構成では
-          # 通常残らない想定だが、念のため保険として置く。
-          $leftover = Get-ChildItem $dir -File | Where-Object {
-            $_.Name -ne 'IdeaNest.exe' -and $_.Extension -in '.dll', '.json'
-          }
-          if ($leftover.Count -gt 0) {
-            New-Item -Path "$dir/runtime" -ItemType Directory -Force | Out-Null
-            $leftover | ForEach-Object { Move-Item $_.FullName "$dir/runtime/" -Force }
-          }
+          New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
+          New-Item -ItemType Directory -Path "artifacts"      -Force | Out-Null
 
-          Write-Host "=== publish/win-x64 layout ==="
-          Get-ChildItem $dir -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+          # Copy only the single exe (exclude any leftover pdb/xml/json)
+          Get-ChildItem -Path "publish" -File |
+            Where-Object { $_.Extension -notin @('.pdb', '.xml', '.json') } |
+            Copy-Item -Destination $stageDir
 
-          if (-not (Test-Path "$dir/IdeaNest.exe")) {
-            Write-Error "IdeaNest.exe が見つかりません。publish に失敗しています。"
-            exit 1
-          }
+          Copy-Item "README.md" -Destination $stageDir
 
-      - name: Extract release notes section
+          $zipPath = Join-Path "artifacts" "$dirName.zip"
+          Compress-Archive -Path $stageDir -DestinationPath $zipPath -Force
+
+          "zip_path=$zipPath" | Out-File -Append $env:GITHUB_OUTPUT
+
+      - name: Create / overwrite GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          $tag = $env:TAG
-          $path = 'docs/release-notes.md'
-          if (-not (Test-Path $path)) {
-            "IdeaNest $tag" | Set-Content release-body.md -Encoding utf8
-            exit 0
-          }
-          $lines = Get-Content $path -Encoding utf8
-          $section = New-Object System.Collections.Generic.List[string]
-          $inSection = $false
-          $headingPattern = "^##\s+$([regex]::Escape($tag))(\s|$)"
-          foreach ($line in $lines) {
-            if ($line -match $headingPattern) { $inSection = $true; $section.Add($line); continue }
-            if ($inSection -and $line -match '^##\s') { break }
-            if ($inSection) { $section.Add($line) }
-          }
-          if ($section.Count -eq 0) {
-            Write-Warning "docs/release-notes.md に '## $tag' のセクションが見つかりませんでした。汎用本文を使います。"
-            "IdeaNest $tag`n`n(リリースノート未整備)" | Set-Content release-body.md -Encoding utf8
-          } else {
-            ($section -join "`n").TrimEnd() | Set-Content release-body.md -Encoding utf8
-          }
-          Write-Host "=== release body ==="
-          Get-Content release-body.md
+          $tag     = "${{ inputs.tag }}"
+          $title   = "${{ steps.notes.outputs.title }}"
+          $zipPath = "${{ steps.package.outputs.zip_path }}"
 
-      - name: Package zip
-        shell: pwsh
-        run: |
-          Compress-Archive -Path publish/win-x64/* -DestinationPath $env:ZIP_NAME -Force
-          Write-Host "ZIP: $env:ZIP_NAME"
-          Get-Item $env:ZIP_NAME | Select-Object Name, Length
+          # Delete existing release (ignore error if none exists)
+          gh release delete $tag --yes 2>&1 | Out-Null
+          $global:LASTEXITCODE = 0
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: IdeaNest-${{ env.TAG }}-win-x64
-          path: ${{ env.ZIP_NAME }}
+          # Re-create or force-update the tag
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -fa $tag -m "Release $tag"
+          git push -f origin "refs/tags/$tag"
 
-      - name: Create GitHub Release (draft)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.TAG }}
-          name: IdeaNest ${{ env.TAG }}
-          body_path: release-body.md
-          draft: true
-          files: ${{ env.ZIP_NAME }}
+          gh release create $tag $zipPath `
+            --title $title `
+            --notes-file release_body.txt
