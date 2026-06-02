@@ -403,8 +403,8 @@ public class MainViewModel : ViewModelBase
         var tagCounts = AllCards
             .SelectMany(c => c.Tags)
             .Where(t => !string.IsNullOrWhiteSpace(t))
-            .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => g.Key)
+            .GroupBy(t => t, StringComparer.Ordinal)
+            .OrderBy(g => g.Key, StringComparer.Ordinal)
             .Select(g => (Name: g.Key, Count: g.Count()))
             .ToList();
 
@@ -490,7 +490,7 @@ public class MainViewModel : ViewModelBase
 
         if (!string.IsNullOrEmpty(tag))
         {
-            items = items.Where(c => c.Tags.Any(t => string.Equals(t, tag, StringComparison.OrdinalIgnoreCase)));
+            items = items.Where(c => c.Tags.Any(t => string.Equals(t, tag, StringComparison.Ordinal)));
         }
 
         if (!string.IsNullOrEmpty(query))
