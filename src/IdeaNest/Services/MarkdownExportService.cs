@@ -21,8 +21,18 @@ public static class MarkdownExportService
         ["white"]  = "白",
     };
 
-    public static void Export(
-        string path,
+    // ── Public entry points ────────────────────────────────────────────────
+
+    /// <summary>Single-card Markdown block (no leading "---" separator).</summary>
+    public static string FormatCard(IdeaCardViewModel card)
+    {
+        var sb = new StringBuilder();
+        AppendCardBlock(sb, card);
+        return sb.ToString();
+    }
+
+    /// <summary>Full export text: header + all card blocks with "---" dividers.</summary>
+    public static string FormatAll(
         IReadOnlyList<IdeaCardViewModel> cards,
         string searchText,
         string selectedTag,
@@ -50,34 +60,53 @@ public static class MarkdownExportService
         {
             sb.AppendLine("---");
             sb.AppendLine();
+            AppendCardBlock(sb, card);
+        }
 
-            var title = string.IsNullOrWhiteSpace(card.Title) ? card.DisplayTitle : card.Title;
-            sb.AppendLine($"## {title.Replace("\n", " ").Trim()}");
-            sb.AppendLine();
+        return sb.ToString();
+    }
 
-            if (!string.IsNullOrWhiteSpace(card.Body))
-            {
-                sb.AppendLine(card.Body.TrimEnd());
-                sb.AppendLine();
-            }
+    /// <summary>Write the full export to a UTF-8 file (no BOM).</summary>
+    public static void Export(
+        string path,
+        IReadOnlyList<IdeaCardViewModel> cards,
+        string searchText,
+        string selectedTag,
+        string selectedColor,
+        bool showArchived)
+    {
+        var text = FormatAll(cards, searchText, selectedTag, selectedColor, showArchived);
+        File.WriteAllText(path, text, new UTF8Encoding(false));
+    }
 
-            var tagLine = card.Tags.Count > 0
-                ? string.Join(" ", card.Tags.Select(t => $"#{t}"))
-                : string.Empty;
+    // ── Private helpers ───────────────────────────────────────────────────
 
-            if (!string.IsNullOrEmpty(tagLine))
-                sb.AppendLine($"Tags: {tagLine}");
-            sb.AppendLine($"Color: {ColorDisplayName(card.Color)}");
-            sb.AppendLine($"Pinned: {(card.IsPinned ? "true" : "false")}");
-            sb.AppendLine($"Archived: {(card.IsArchived ? "true" : "false")}");
-            sb.AppendLine($"CreatedAt: {card.CreatedAt:yyyy/MM/dd HH:mm}");
-            sb.AppendLine($"UpdatedAt: {card.UpdatedAt:yyyy/MM/dd HH:mm}");
+    private static void AppendCardBlock(StringBuilder sb, IdeaCardViewModel card)
+    {
+        var title = string.IsNullOrWhiteSpace(card.Title) ? card.DisplayTitle : card.Title;
+        sb.AppendLine($"## {title.Replace("\n", " ").Trim()}");
+        sb.AppendLine();
+
+        if (!string.IsNullOrWhiteSpace(card.Body))
+        {
+            sb.AppendLine(card.Body.TrimEnd());
             sb.AppendLine();
         }
 
-        File.WriteAllText(path, sb.ToString(), new UTF8Encoding(false));
+        var tagLine = card.Tags.Count > 0
+            ? string.Join(" ", card.Tags.Select(t => $"#{t}"))
+            : string.Empty;
+
+        if (!string.IsNullOrEmpty(tagLine))
+            sb.AppendLine($"Tags: {tagLine}");
+        sb.AppendLine($"Color: {ColorDisplayName(card.Color)}");
+        sb.AppendLine($"Pinned: {(card.IsPinned ? "true" : "false")}");
+        sb.AppendLine($"Archived: {(card.IsArchived ? "true" : "false")}");
+        sb.AppendLine($"CreatedAt: {card.CreatedAt:yyyy/MM/dd HH:mm}");
+        sb.AppendLine($"UpdatedAt: {card.UpdatedAt:yyyy/MM/dd HH:mm}");
+        sb.AppendLine();
     }
 
-    private static string ColorDisplayName(string color) =>
+    public static string ColorDisplayName(string color) =>
         ColorDisplayNames.TryGetValue(color ?? string.Empty, out var name) ? name : (color ?? string.Empty);
 }
