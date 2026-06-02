@@ -16,6 +16,7 @@
         <KeyBinding Modifiers="Ctrl"        Key="S" Command="{Binding SaveCommand}" />
         <KeyBinding Modifiers="Ctrl+Shift"  Key="S" Command="{Binding SaveAsCommand}" />
         <KeyBinding Modifiers="Ctrl+Shift"  Key="N" Command="{Binding AddIdeaCommand}" />
+        <KeyBinding Modifiers="Ctrl+Shift"  Key="C" Command="{Binding CopyAllMarkdownCommand}" />
     </Window.InputBindings>
 
     <DockPanel>
@@ -42,6 +43,9 @@
                           Click="OnFocusSearchClick" />
                 <Separator />
                 <MenuItem Header="タグ管理(_T)..." Command="{Binding ManageTagsCommand}" />
+                <Separator />
+                <MenuItem Header="表示中カードをMarkdown形式でコピー(_C)" InputGestureText="Ctrl+Shift+C"
+                          Command="{Binding CopyAllMarkdownCommand}" />
             </MenuItem>
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="アーカイブを表示" IsCheckable="True" IsChecked="{Binding ShowArchived, Mode=TwoWay}" />
@@ -144,6 +148,14 @@
             </StackPanel>
         </Border>
 
+        <!-- Status bar (must be declared before the fill Grid in DockPanel order) -->
+        <Border DockPanel.Dock="Bottom" Background="Transparent" Padding="20,4"
+                Visibility="{Binding StatusMessage, Converter={StaticResource StringToVis}}">
+            <TextBlock Text="{Binding StatusMessage}"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="12" />
+        </Border>
+
         <!-- Body: tag list + cards -->
         <Grid>
             <Grid.ColumnDefinitions>
@@ -217,7 +229,7 @@
                 </DockPanel>
             </Border>
 
-            <Grid Grid.Column="1">
+            <Grid Grid.Column="1" x:Name="CardArea">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,8,12,12"
                               Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisInverse}}">
                     <ItemsControl ItemsSource="{Binding VisibleCards}">
@@ -236,6 +248,27 @@
                                                       Command="{Binding DataContext.EditIdeaCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                       CommandParameter="{Binding}" />
                                     </Border.InputBindings>
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Markdown形式でコピー(_C)"
+                                                      Command="{Binding DataContext.CopyCardMarkdownCommand, Source={x:Reference CardArea}}"
+                                                      CommandParameter="{Binding}" />
+                                            <Separator />
+                                            <MenuItem Header="編集(_E)"
+                                                      Command="{Binding DataContext.EditIdeaCommand, Source={x:Reference CardArea}}"
+                                                      CommandParameter="{Binding}" />
+                                            <MenuItem Header="ピン留め切替(_P)"
+                                                      Command="{Binding DataContext.TogglePinCommand, Source={x:Reference CardArea}}"
+                                                      CommandParameter="{Binding}" />
+                                            <MenuItem Header="アーカイブ切替(_A)"
+                                                      Command="{Binding DataContext.ToggleArchiveCommand, Source={x:Reference CardArea}}"
+                                                      CommandParameter="{Binding}" />
+                                            <Separator />
+                                            <MenuItem Header="削除(_D)"
+                                                      Command="{Binding DataContext.DeleteIdeaCommand, Source={x:Reference CardArea}}"
+                                                      CommandParameter="{Binding}" />
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
                                     <DockPanel Margin="14">
                                         <!-- Header: pin + title -->
                                         <Grid DockPanel.Dock="Top" Margin="0,0,0,6">

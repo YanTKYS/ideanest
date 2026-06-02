@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using IdeaNest.Commands;
 using IdeaNest.Models;
 using IdeaNest.Services;
@@ -18,6 +19,8 @@ public class MainViewModel : ViewModelBase
     private Workspace _workspace = new();
     private string? _currentFilePath;
     private bool _isDirty;
+    private string _statusMessage = string.Empty;
+    private DispatcherTimer? _statusClearTimer;
     private string _searchText = string.Empty;
     private string _selectedTag = string.Empty;
     private string _selectedColor = string.Empty;
@@ -134,6 +137,14 @@ public class MainViewModel : ViewModelBase
     public ICommand ClearColorCommand { get; }
     public ICommand ManageTagsCommand { get; }
     public ICommand ExportMarkdownCommand { get; }
+    public ICommand CopyCardMarkdownCommand { get; }
+    public ICommand CopyAllMarkdownCommand { get; }
+
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        private set => SetField(ref _statusMessage, value);
+    }
 
     public int TotalCount => AllCards.Count;
     public int VisibleCount => VisibleCards.Count;
@@ -197,9 +208,11 @@ public class MainViewModel : ViewModelBase
         SelectTagCommand       = new RelayCommand(p => SelectedTag = p as string ?? string.Empty);
         ClearTagCommand        = new RelayCommand(_ => SelectedTag = string.Empty);
         ClearSearchCommand     = new RelayCommand(_ => SearchText = string.Empty);
-        ClearColorCommand      = new RelayCommand(_ => SelectedColor = string.Empty);
-        ManageTagsCommand      = new RelayCommand(_ => OpenTagManagement());
-        ExportMarkdownCommand  = new RelayCommand(_ => ExportMarkdown());
+        ClearColorCommand         = new RelayCommand(_ => SelectedColor = string.Empty);
+        ManageTagsCommand         = new RelayCommand(_ => OpenTagManagement());
+        ExportMarkdownCommand     = new RelayCommand(_ => ExportMarkdown());
+        CopyCardMarkdownCommand   = new RelayCommand(p => CopyCardMarkdown(p as IdeaCardViewModel));
+        CopyAllMarkdownCommand    = new RelayCommand(_ => CopyAllMarkdown());
     }
 
     private void RaiseCountAndEmptyStateChanged()
@@ -499,6 +512,47 @@ public class MainViewModel : ViewModelBase
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private void CopyCardMarkdown(IdeaCardViewModel? card)
+    {
+        if (card == null) return;
+        var text = MarkdownExportService.FormatCard(card);
+        Clipboard.SetText(text);
+        ShowStatus("カードをコピーしました。");
+    }
+
+    private void CopyAllMarkdown()
+    {
+        if (VisibleCards.Count == 0)
+        {
+            MessageBox.Show(
+                "コピー対象のカードがありません。",
+                "IdeaNest",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+        var text = MarkdownExportService.FormatAll(
+            VisibleCards, SearchText, SelectedTag, SelectedColor, ShowArchived);
+        Clipboard.SetText(text);
+        ShowStatus($"表示中の{VisibleCards.Count}件をコピーしました。");
+    }
+
+    private void ShowStatus(string message)
+    {
+        StatusMessage = message;
+        _statusClearTimer?.Stop();
+        _statusClearTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(3),
+        };
+        _statusClearTimer.Tick += (_, _) =>
+        {
+            StatusMessage = string.Empty;
+            _statusClearTimer?.Stop();
+        };
+        _statusClearTimer.Start();
     }
 
     public void RenameTag(string oldName, string newName)
