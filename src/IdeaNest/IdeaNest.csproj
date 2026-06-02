@@ -12,6 +12,13 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Version>0.1.1</Version>
     <SatelliteResourceLanguages>ja;en</SatelliteResourceLanguages>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Assets\app.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>
