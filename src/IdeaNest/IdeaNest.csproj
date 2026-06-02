@@ -10,7 +10,7 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <Version>0.2.3</Version>
+    <Version>0.3.0</Version>
     <SatelliteResourceLanguages>ja;en</SatelliteResourceLanguages>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>

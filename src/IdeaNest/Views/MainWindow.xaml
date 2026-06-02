@@ -31,6 +31,7 @@
                 <Separator />
                 <MenuItem Header="エクスポート(_E)">
                     <MenuItem Header="Markdown風テキスト(_M)..." Command="{Binding ExportMarkdownCommand}" />
+                    <MenuItem Header="NoteNest向けテキスト(_N)..." Command="{Binding ExportNoteNestCommand}" />
                 </MenuItem>
                 <Separator />
                 <MenuItem Header="終了(_X)" Click="OnExitClick" />
@@ -46,6 +47,8 @@
                 <Separator />
                 <MenuItem Header="表示中カードをMarkdown形式でコピー(_C)" InputGestureText="Ctrl+Shift+C"
                           Command="{Binding CopyAllMarkdownCommand}" />
+                <MenuItem Header="表示中カードをNoteNest向けにコピー(_N)"
+                          Command="{Binding CopyNoteNestCommand}" />
             </MenuItem>
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="アーカイブを表示" IsCheckable="True" IsChecked="{Binding ShowArchived, Mode=TwoWay}" />
