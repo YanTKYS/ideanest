@@ -152,11 +152,20 @@
         </Border>
 
         <!-- Status bar (must be declared before the fill Grid in DockPanel order) -->
-        <Border DockPanel.Dock="Bottom" Background="Transparent" Padding="20,4"
-                Visibility="{Binding StatusMessage, Converter={StaticResource StringToVis}}">
-            <TextBlock Text="{Binding StatusMessage}"
-                       Foreground="{StaticResource TextSecondaryBrush}"
-                       FontSize="12" />
+        <Border DockPanel.Dock="Bottom" Background="Transparent" Padding="20,4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding SaveStatusText}"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="12" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding StatusMessage}"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="12" VerticalAlignment="Center"
+                           HorizontalAlignment="Right" />
+            </Grid>
         </Border>
 
         <!-- Body: tag list + cards -->

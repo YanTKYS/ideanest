@@ -21,6 +21,11 @@ public class MainViewModel : ViewModelBase
     private bool _isDirty;
     private string _statusMessage = string.Empty;
     private DispatcherTimer? _statusClearTimer;
+    private DispatcherTimer? _autoSaveTimer;
+    private bool _isAutoSaving;
+    private bool _autoSaveFailed;
+    private DateTime? _lastAutoSaveTime;
+    private static readonly TimeSpan AutoSaveDelay = TimeSpan.FromSeconds(2);
     private string _searchText = string.Empty;
     private string _selectedTag = string.Empty;
     private string _selectedColor = string.Empty;
@@ -55,13 +60,44 @@ public class MainViewModel : ViewModelBase
     public string? CurrentFilePath
     {
         get => _currentFilePath;
-        private set { if (SetField(ref _currentFilePath, value)) { OnPropertyChanged(nameof(Title)); } }
+        private set
+        {
+            if (SetField(ref _currentFilePath, value))
+            {
+                OnPropertyChanged(nameof(Title));
+                OnPropertyChanged(nameof(SaveStatusText));
+            }
+        }
     }
 
     public bool IsDirty
     {
         get => _isDirty;
-        private set { if (SetField(ref _isDirty, value)) { OnPropertyChanged(nameof(Title)); } }
+        private set
+        {
+            if (SetField(ref _isDirty, value))
+            {
+                OnPropertyChanged(nameof(Title));
+                OnPropertyChanged(nameof(SaveStatusText));
+            }
+        }
+    }
+
+    public string SaveStatusText
+    {
+        get
+        {
+            if (_isAutoSaving) return "自動保存中...";
+            if (_autoSaveFailed) return "自動保存に失敗しました";
+            if (string.IsNullOrEmpty(CurrentFilePath))
+            {
+                return IsDirty ? "未保存 (新規ファイル)" : "新規ファイル";
+            }
+            if (IsDirty) return "未保存の変更あり";
+            if (_lastAutoSaveTime.HasValue)
+                return $"自動保存しました {_lastAutoSaveTime:HH:mm}";
+            return "保存済み";
+        }
     }
 
     public string SearchText
@@ -237,6 +273,15 @@ public class MainViewModel : ViewModelBase
         CurrentFilePath = null;
         ReloadFromWorkspace();
         IsDirty = false;
+        ResetAutoSaveState();
+    }
+
+    private void ResetAutoSaveState()
+    {
+        _autoSaveTimer?.Stop();
+        _lastAutoSaveTime = null;
+        _autoSaveFailed = false;
+        OnPropertyChanged(nameof(SaveStatusText));
     }
 
     private void Open()
@@ -254,6 +299,7 @@ public class MainViewModel : ViewModelBase
             CurrentFilePath = dlg.FileName;
             ReloadFromWorkspace();
             IsDirty = false;
+            ResetAutoSaveState();
         }
         catch (Exception ex)
         {
@@ -290,10 +336,16 @@ public class MainViewModel : ViewModelBase
             WorkspaceService.Save(path, _workspace);
             CurrentFilePath = path;
             IsDirty = false;
+            _autoSaveTimer?.Stop();
+            _lastAutoSaveTime = DateTime.Now;
+            _autoSaveFailed = false;
+            OnPropertyChanged(nameof(SaveStatusText));
             return true;
         }
         catch (Exception ex)
         {
+            _autoSaveFailed = true;
+            OnPropertyChanged(nameof(SaveStatusText));
             MessageBox.Show($"保存に失敗しました:\n{ex.Message}", "IdeaNest", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
@@ -428,7 +480,63 @@ public class MainViewModel : ViewModelBase
         RefreshVisible();
     }
 
-    public void MarkDirty() => IsDirty = true;
+    public void MarkDirty()
+    {
+        IsDirty = true;
+        ScheduleAutoSave();
+    }
+
+    private void ScheduleAutoSave()
+    {
+        // Auto-save only fires when we already have a path; new/unsaved files
+        // require explicit Save-As so we never pick a path on the user's behalf.
+        if (string.IsNullOrEmpty(CurrentFilePath)) return;
+        if (_isAutoSaving) return;
+
+        if (_autoSaveTimer == null)
+        {
+            _autoSaveTimer = new DispatcherTimer { Interval = AutoSaveDelay };
+            _autoSaveTimer.Tick += OnAutoSaveTick;
+        }
+        _autoSaveTimer.Stop();
+        _autoSaveTimer.Start();
+    }
+
+    private void OnAutoSaveTick(object? sender, EventArgs e)
+    {
+        _autoSaveTimer?.Stop();
+        PerformAutoSave();
+    }
+
+    private void PerformAutoSave()
+    {
+        if (string.IsNullOrEmpty(CurrentFilePath)) return;
+        if (!IsDirty) return;
+        if (_isAutoSaving) return;
+
+        _isAutoSaving = true;
+        OnPropertyChanged(nameof(SaveStatusText));
+
+        try
+        {
+            SyncWindowSizeBeforeSave();
+            WorkspaceService.Save(CurrentFilePath, _workspace);
+            IsDirty = false;
+            _lastAutoSaveTime = DateTime.Now;
+            _autoSaveFailed = false;
+        }
+        catch
+        {
+            // Stay dirty so the user can retry via Ctrl+S; surface the failure
+            // through SaveStatusText rather than a modal dialog.
+            _autoSaveFailed = true;
+        }
+        finally
+        {
+            _isAutoSaving = false;
+            OnPropertyChanged(nameof(SaveStatusText));
+        }
+    }
 
     private void ReloadFromWorkspace()
     {
