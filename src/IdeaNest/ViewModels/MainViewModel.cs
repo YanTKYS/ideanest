@@ -577,6 +577,13 @@ public class MainViewModel : ViewModelBase
             return;
         }
 
+        var optsDlg = new Views.NoteNestExportOptionsWindow
+        {
+            Owner = Application.Current?.MainWindow,
+        };
+        if (optsDlg.ShowDialog() != true) return;
+        var options = optsDlg.Options!;
+
         var defaultName = $"ideanest_notenest_{DateTime.Now:yyyyMMdd_HHmm}.md";
         var dlg = new Microsoft.Win32.SaveFileDialog
         {
@@ -594,7 +601,8 @@ public class MainViewModel : ViewModelBase
                 SearchText,
                 SelectedTag,
                 SelectedColor,
-                ShowArchived);
+                ShowArchived,
+                options);
         }
         catch (Exception ex)
         {
@@ -617,8 +625,16 @@ public class MainViewModel : ViewModelBase
                 MessageBoxImage.Information);
             return;
         }
+
+        var optsDlg = new Views.NoteNestExportOptionsWindow
+        {
+            Owner = Application.Current?.MainWindow,
+        };
+        if (optsDlg.ShowDialog() != true) return;
+        var options = optsDlg.Options!;
+
         var text = NoteNestExportService.FormatAll(
-            VisibleCards, SearchText, SelectedTag, SelectedColor, ShowArchived);
+            VisibleCards, SearchText, SelectedTag, SelectedColor, ShowArchived, options);
         try
         {
             Clipboard.SetText(text);
