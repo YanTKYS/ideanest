@@ -20,6 +20,7 @@ public static class WorkspaceService
         var workspace = JsonSerializer.Deserialize<Workspace>(json, JsonOptions)
             ?? throw new InvalidDataException("Invalid .ideanest file");
         workspace.Ideas ??= new();
+        workspace.Ideas.RemoveAll(i => i is null);
         workspace.Settings ??= new();
         foreach (var idea in workspace.Ideas)
         {
