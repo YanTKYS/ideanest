@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using System.Linq;
 using IdeaNest.Models;
+using IdeaNest.Services;
 
 namespace IdeaNest.ViewModels;
 
@@ -41,11 +41,9 @@ public class EditIdeaViewModel : ViewModelBase
     public void ApplyTo(Idea idea)
     {
         idea.Title = (Title ?? string.Empty).Trim();
-        idea.Body = Body ?? string.Empty;
-        idea.Tags = (TagsText ?? string.Empty)
-            .Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries)
-            .Distinct()
-            .ToList();
+        idea.Body  = Body ?? string.Empty;
+        idea.Tags  = WorkspaceService.NormalizeTags(
+            (TagsText ?? string.Empty).Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries));
         idea.Color = string.IsNullOrWhiteSpace(Color) ? "yellow" : Color;
         idea.IsPinned = IsPinned;
         idea.IsArchived = IsArchived;

@@ -25,6 +25,7 @@ public class MainViewModel : ViewModelBase
     public ObservableCollection<IdeaCardViewModel> AllCards { get; } = new();
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
     public ObservableCollection<string> AvailableTags { get; } = new();
+    public ObservableCollection<TagItemViewModel> TagItems { get; } = new();
 
     public string Title
     {
@@ -104,6 +105,7 @@ public class MainViewModel : ViewModelBase
     public ICommand SelectTagCommand { get; }
     public ICommand ClearTagCommand { get; }
     public ICommand ClearSearchCommand { get; }
+    public ICommand ManageTagsCommand { get; }
 
     public int TotalCount => AllCards.Count;
     public int VisibleCount => VisibleCards.Count;
@@ -166,6 +168,7 @@ public class MainViewModel : ViewModelBase
         SelectTagCommand       = new RelayCommand(p => SelectedTag = p as string ?? string.Empty);
         ClearTagCommand        = new RelayCommand(_ => SelectedTag = string.Empty);
         ClearSearchCommand     = new RelayCommand(_ => SearchText = string.Empty);
+        ManageTagsCommand      = new RelayCommand(_ => OpenTagManagement());
     }
 
     private void RaiseCountAndEmptyStateChanged()
@@ -397,15 +400,80 @@ public class MainViewModel : ViewModelBase
 
     private void RefreshTags()
     {
-        var tags = AllCards
+        var tagCounts = AllCards
             .SelectMany(c => c.Tags)
             .Where(t => !string.IsNullOrWhiteSpace(t))
-            .Select(t => t.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(t => t)
+            .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key)
+            .Select(g => (Name: g.Key, Count: g.Count()))
             .ToList();
+
         AvailableTags.Clear();
-        foreach (var t in tags) AvailableTags.Add(t);
+        TagItems.Clear();
+        foreach (var (name, count) in tagCounts)
+        {
+            AvailableTags.Add(name);
+            TagItems.Add(new TagItemViewModel(name, count));
+        }
+    }
+
+    private void OpenTagManagement()
+    {
+        var dlg = new Views.TagManagementWindow(this)
+        {
+            Owner = Application.Current?.MainWindow,
+        };
+        dlg.ShowDialog();
+    }
+
+    public void RenameTag(string oldName, string newName)
+    {
+        newName = WorkspaceService.NormalizeTag(newName);
+        if (string.IsNullOrWhiteSpace(newName) || newName == oldName) return;
+
+        foreach (var card in AllCards)
+        {
+            if (card.Tags.Any(t => string.Equals(t, oldName, StringComparison.Ordinal)))
+            {
+                card.Tags = WorkspaceService.NormalizeTags(
+                    card.Tags.Select(t => string.Equals(t, oldName, StringComparison.Ordinal) ? newName : t));
+                card.Touch();
+                card.OnExternalUpdate();
+            }
+        }
+
+        if (string.Equals(SelectedTag, oldName, StringComparison.Ordinal))
+        {
+            SelectedTag = newName;
+        }
+
+        MarkDirty();
+        RefreshTags();
+        RefreshVisible();
+    }
+
+    public void DeleteTag(string tagName)
+    {
+        foreach (var card in AllCards)
+        {
+            if (card.Tags.Any(t => string.Equals(t, tagName, StringComparison.Ordinal)))
+            {
+                card.Tags = card.Tags
+                    .Where(t => !string.Equals(t, tagName, StringComparison.Ordinal))
+                    .ToList();
+                card.Touch();
+                card.OnExternalUpdate();
+            }
+        }
+
+        if (string.Equals(SelectedTag, tagName, StringComparison.Ordinal))
+        {
+            SelectedTag = string.Empty;
+        }
+
+        MarkDirty();
+        RefreshTags();
+        RefreshVisible();
     }
 
     private void RefreshVisible()
