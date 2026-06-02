@@ -61,6 +61,7 @@ public class MainViewModel : ViewModelBase
             {
                 _workspace.Settings.SearchText = value;
                 RefreshVisible();
+                MarkDirty();
             }
         }
     }
@@ -74,6 +75,7 @@ public class MainViewModel : ViewModelBase
             {
                 _workspace.Settings.SelectedTag = _selectedTag;
                 RefreshVisible();
+                MarkDirty();
             }
         }
     }
@@ -87,6 +89,7 @@ public class MainViewModel : ViewModelBase
             {
                 _workspace.Settings.ShowArchived = value;
                 RefreshVisible();
+                MarkDirty();
             }
         }
     }

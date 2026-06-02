@@ -85,6 +85,27 @@ internal static class Program
         Check(json.Contains("\"updatedAt\""), "json has updatedAt");
         Check(json.Contains("開発"), "non-ASCII characters preserved without escaping");
 
+        // 5. Malformed / partial JSON should be normalized by Load.
+        var brokenPath = Path.Combine(tmpDir, "broken.ideanest");
+        File.WriteAllText(brokenPath, """
+            {
+              "version": "0.1.0",
+              "workspaceName": "Broken",
+              "ideas": [
+                { "id": "", "title": null, "body": null, "tags": null, "color": "" },
+                { "id": "x", "title": "ok", "body": "ok", "tags": ["a", "", "  "], "color": "blue" }
+              ]
+            }
+            """);
+        var broken = WorkspaceService.Load(brokenPath);
+        Check(broken.Ideas.Count == 2, "broken: ideas count");
+        Check(!string.IsNullOrEmpty(broken.Ideas[0].Id), "broken: empty id is regenerated");
+        Check(broken.Ideas[0].Title == string.Empty, "broken: null title becomes empty");
+        Check(broken.Ideas[0].Body == string.Empty, "broken: null body becomes empty");
+        Check(broken.Ideas[0].Tags != null && broken.Ideas[0].Tags.Count == 0, "broken: null tags becomes empty list");
+        Check(broken.Ideas[0].Color == "yellow", "broken: empty color falls back to yellow");
+        Check(broken.Ideas[1].Tags.Count == 1 && broken.Ideas[1].Tags[0] == "a", "broken: blank tag entries are dropped");
+
         try { Directory.Delete(tmpDir, recursive: true); } catch { /* ignore */ }
 
         Console.WriteLine();
