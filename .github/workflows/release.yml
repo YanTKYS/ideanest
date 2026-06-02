@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'リリースバージョン (例: 0.1.0)'
+        description: 'リリースタグ (v から始める。例: v0.1.0)'
         required: true
-        default: '0.1.0'
+        default: 'v0.1.0'
 
 jobs:
   release:
@@ -20,6 +20,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate version & derive numeric version
+        shell: pwsh
+        run: |
+          $tag = '${{ github.event.inputs.version }}'.Trim()
+          if ($tag -notmatch '^v\d+\.\d+\.\d+([.\-+].+)?$') {
+            Write-Error "version は 'v0.1.0' のように 'v' から始めてください。入力値: '$tag'"
+            exit 1
+          }
+          $numeric = $tag.Substring(1)
+          "TAG=$tag"             | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "NUMERIC=$numeric"     | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "ZIP_NAME=IdeaNest-$tag-win-x64.zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -28,7 +41,7 @@ jobs:
       - name: Restore
         run: dotnet restore src/IdeaNest/IdeaNest.csproj
 
-      - name: Publish (win-x64, self-contained)
+      - name: Publish (win-x64, self-contained single exe)
         run: >
           dotnet publish src/IdeaNest/IdeaNest.csproj
           --configuration Release
@@ -36,25 +49,87 @@ jobs:
           --self-contained true
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:Version=${{ github.event.inputs.version }}
+          -p:IncludeAllContentForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -p:DebugType=embedded
+          -p:SatelliteResourceLanguages=ja;en
+          -p:Version=${{ env.NUMERIC }}
+          -p:AssemblyVersion=${{ env.NUMERIC }}.0
+          -p:FileVersion=${{ env.NUMERIC }}.0
           --output publish/win-x64
+
+      - name: Clean publish output & verify layout
+        shell: pwsh
+        run: |
+          $dir = 'publish/win-x64'
+          Get-ChildItem $dir -Recurse -Filter *.pdb | Remove-Item -Force -ErrorAction SilentlyContinue
+          Get-ChildItem $dir -Recurse -Filter *.xml | Remove-Item -Force -ErrorAction SilentlyContinue
+
+          # フォールバック: PublishSingleFile で吸い込めなかった DLL/JSON が root に
+          # 残った場合は runtime/ サブフォルダに退避し、ZIP ルートを exe + (任意で runtime/) に保つ。
+          # 注意: 単一 exe + IncludeNativeLibrariesForSelfExtract=true の構成では
+          # 通常残らない想定だが、念のため保険として置く。
+          $leftover = Get-ChildItem $dir -File | Where-Object {
+            $_.Name -ne 'IdeaNest.exe' -and $_.Extension -in '.dll', '.json'
+          }
+          if ($leftover.Count -gt 0) {
+            New-Item -Path "$dir/runtime" -ItemType Directory -Force | Out-Null
+            $leftover | ForEach-Object { Move-Item $_.FullName "$dir/runtime/" -Force }
+          }
+
+          Write-Host "=== publish/win-x64 layout ==="
+          Get-ChildItem $dir -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+
+          if (-not (Test-Path "$dir/IdeaNest.exe")) {
+            Write-Error "IdeaNest.exe が見つかりません。publish に失敗しています。"
+            exit 1
+          }
+
+      - name: Extract release notes section
+        shell: pwsh
+        run: |
+          $tag = $env:TAG
+          $path = 'docs/release-notes.md'
+          if (-not (Test-Path $path)) {
+            "IdeaNest $tag" | Set-Content release-body.md -Encoding utf8
+            exit 0
+          }
+          $lines = Get-Content $path -Encoding utf8
+          $section = New-Object System.Collections.Generic.List[string]
+          $inSection = $false
+          $headingPattern = "^##\s+$([regex]::Escape($tag))(\s|$)"
+          foreach ($line in $lines) {
+            if ($line -match $headingPattern) { $inSection = $true; $section.Add($line); continue }
+            if ($inSection -and $line -match '^##\s') { break }
+            if ($inSection) { $section.Add($line) }
+          }
+          if ($section.Count -eq 0) {
+            Write-Warning "docs/release-notes.md に '## $tag' のセクションが見つかりませんでした。汎用本文を使います。"
+            "IdeaNest $tag`n`n(リリースノート未整備)" | Set-Content release-body.md -Encoding utf8
+          } else {
+            ($section -join "`n").TrimEnd() | Set-Content release-body.md -Encoding utf8
+          }
+          Write-Host "=== release body ==="
+          Get-Content release-body.md
 
       - name: Package zip
         shell: pwsh
         run: |
-          $version = '${{ github.event.inputs.version }}'
-          Compress-Archive -Path publish/win-x64/* -DestinationPath "IdeaNest-$version-win-x64.zip"
+          Compress-Archive -Path publish/win-x64/* -DestinationPath $env:ZIP_NAME -Force
+          Write-Host "ZIP: $env:ZIP_NAME"
+          Get-Item $env:ZIP_NAME | Select-Object Name, Length
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: IdeaNest-${{ github.event.inputs.version }}-win-x64
-          path: IdeaNest-${{ github.event.inputs.version }}-win-x64.zip
+          name: IdeaNest-${{ env.TAG }}-win-x64
+          path: ${{ env.ZIP_NAME }}
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (draft)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.event.inputs.version }}
-          name: IdeaNest v${{ github.event.inputs.version }}
+          tag_name: ${{ env.TAG }}
+          name: IdeaNest ${{ env.TAG }}
+          body_path: release-body.md
           draft: true
-          files: IdeaNest-${{ github.event.inputs.version }}-win-x64.zip
+          files: ${{ env.ZIP_NAME }}
