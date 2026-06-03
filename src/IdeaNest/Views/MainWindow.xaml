@@ -53,6 +53,18 @@
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="アーカイブを表示" IsCheckable="True" IsChecked="{Binding ShowArchived, Mode=TwoWay}" />
                 <MenuItem Header="タグパネル" IsCheckable="True" IsChecked="{Binding IsTagPanelOpen, Mode=TwoWay}" />
+                <Separator />
+                <MenuItem Header="カードサイズ(_Z)">
+                    <MenuItem Header="小 (S)" IsCheckable="True"
+                              IsChecked="{Binding IsCardSizeSmall, Mode=OneWay}"
+                              Command="{Binding SetCardSizeCommand}" CommandParameter="small" />
+                    <MenuItem Header="中 (M)" IsCheckable="True"
+                              IsChecked="{Binding IsCardSizeMedium, Mode=OneWay}"
+                              Command="{Binding SetCardSizeCommand}" CommandParameter="medium" />
+                    <MenuItem Header="大 (L)" IsCheckable="True"
+                              IsChecked="{Binding IsCardSizeLarge, Mode=OneWay}"
+                              Command="{Binding SetCardSizeCommand}" CommandParameter="large" />
+                </MenuItem>
             </MenuItem>
         </Menu>
 
@@ -115,59 +127,109 @@
             </Grid>
         </Border>
 
-        <!-- Color filter strip (compact) -->
+        <!-- Color filter strip (compact) + card size toggle -->
         <Border DockPanel.Dock="Top" Background="Transparent" Padding="16,0,16,6">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="色:" Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <Button Content="(すべて)"
-                        Command="{Binding ClearColorCommand}"
-                        Style="{StaticResource IconButtonStyle}"
-                        Padding="8,4" Margin="0,0,8,0"
-                        ToolTip="色フィルタを解除" />
-                <ListBox ItemsSource="{Binding ColorItems}"
-                         SelectedValue="{Binding SelectedColor, Mode=TwoWay}"
-                         SelectedValuePath="Name"
-                         Background="Transparent" BorderThickness="0"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                    <ListBox.ItemContainerStyle>
-                        <Style TargetType="ListBoxItem">
-                            <Setter Property="Margin" Value="0,0,4,0" />
-                            <Setter Property="Padding" Value="0" />
-                            <Setter Property="Background" Value="Transparent" />
-                            <Setter Property="Cursor" Value="Hand" />
-                            <Setter Property="ToolTip" Value="{Binding DisplayName}" />
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="ListBoxItem">
-                                        <Border x:Name="Ring" Width="22" Height="22" CornerRadius="11"
-                                                Background="Transparent"
-                                                BorderBrush="Transparent" BorderThickness="2"
-                                                Padding="2">
-                                            <Ellipse Fill="{Binding Name, Converter={StaticResource ColorNameToBrush}}"
-                                                     Stroke="#D1D5DB" StrokeThickness="1" />
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Ring" Property="BorderBrush" Value="#FFE4D2" />
-                                            </Trigger>
-                                            <Trigger Property="IsSelected" Value="True">
-                                                <Setter TargetName="Ring" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </ListBox.ItemContainerStyle>
-                </ListBox>
-            </StackPanel>
+            <DockPanel>
+                <!-- Card size toggle (right side) -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="サイズ:" Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="12" VerticalAlignment="Center" Margin="12,0,6,0" />
+                    <Button Content="S" ToolTip="小 (コンパクト)"
+                            Command="{Binding SetCardSizeCommand}" CommandParameter="small"
+                            Padding="6,4" Margin="0,0,2,0">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCardSizeSmall}" Value="True">
+                                        <Setter Property="Background" Value="#FFE4D2" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="M" ToolTip="中 (標準)"
+                            Command="{Binding SetCardSizeCommand}" CommandParameter="medium"
+                            Padding="6,4" Margin="0,0,2,0">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCardSizeMedium}" Value="True">
+                                        <Setter Property="Background" Value="#FFE4D2" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="L" ToolTip="大 (広い)"
+                            Command="{Binding SetCardSizeCommand}" CommandParameter="large"
+                            Padding="6,4" Margin="0">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCardSizeLarge}" Value="True">
+                                        <Setter Property="Background" Value="#FFE4D2" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+                <!-- Color filter (left side) -->
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="色:" Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <Button Content="(すべて)"
+                            Command="{Binding ClearColorCommand}"
+                            Style="{StaticResource IconButtonStyle}"
+                            Padding="8,4" Margin="0,0,8,0"
+                            ToolTip="色フィルタを解除" />
+                    <ListBox ItemsSource="{Binding ColorItems}"
+                             SelectedValue="{Binding SelectedColor, Mode=TwoWay}"
+                             SelectedValuePath="Name"
+                             Background="Transparent" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Margin" Value="0,0,4,0" />
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Cursor" Value="Hand" />
+                                <Setter Property="ToolTip" Value="{Binding DisplayName}" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="Ring" Width="22" Height="22" CornerRadius="11"
+                                                    Background="Transparent"
+                                                    BorderBrush="Transparent" BorderThickness="2"
+                                                    Padding="2">
+                                                <Ellipse Fill="{Binding Name, Converter={StaticResource ColorNameToBrush}}"
+                                                         Stroke="#D1D5DB" StrokeThickness="1" />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Ring" Property="BorderBrush" Value="#FFE4D2" />
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Ring" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <!-- Status bar (must be declared before the fill Grid in DockPanel order) -->
@@ -274,7 +336,9 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Style="{StaticResource CardContainerStyle}"
-                                        Width="252" Height="212"
+                                        Width="{Binding DataContext.CardWidth, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        Height="{Binding DataContext.CardHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        ClipToBounds="True"
                                         Background="{Binding BackgroundBrush, Converter={StaticResource HexToBrush}}">
                                     <Border.InputBindings>
                                         <MouseBinding MouseAction="LeftDoubleClick"
