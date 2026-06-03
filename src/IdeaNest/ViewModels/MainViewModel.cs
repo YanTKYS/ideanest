@@ -337,8 +337,9 @@ public class MainViewModel : ViewModelBase
             CurrentFilePath = path;
             IsDirty = false;
             _autoSaveTimer?.Stop();
-            // _lastAutoSaveTime は自動保存専用とし、手動保存では更新しない。
-            // これにより SaveStatusText が「自動保存しました」ではなく「保存済み」を返す。
+            // _lastAutoSaveTime は自動保存専用。手動保存後は過去の自動保存時刻を
+            // クリアして SaveStatusText が「保存済み」を返すようにする。
+            _lastAutoSaveTime = null;
             _autoSaveFailed = false;
             OnPropertyChanged(nameof(SaveStatusText));
             return true;
