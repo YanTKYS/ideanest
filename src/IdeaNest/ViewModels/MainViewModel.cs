@@ -187,11 +187,13 @@ public class MainViewModel : ViewModelBase
                 _workspace.Settings.CardSize = v;
                 OnPropertyChanged(nameof(CardWidth));
                 OnPropertyChanged(nameof(CardHeight));
-                OnPropertyChanged(nameof(IsCardSizeSmall));
-                OnPropertyChanged(nameof(IsCardSizeMedium));
-                OnPropertyChanged(nameof(IsCardSizeLarge));
                 MarkDirty();
             }
+            // Notify flags unconditionally so that re-clicking the current menu item
+            // (which momentarily unchecks it in WPF) gets corrected by the binding.
+            OnPropertyChanged(nameof(IsCardSizeSmall));
+            OnPropertyChanged(nameof(IsCardSizeMedium));
+            OnPropertyChanged(nameof(IsCardSizeLarge));
         }
     }
 
