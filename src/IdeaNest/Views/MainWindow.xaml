@@ -353,7 +353,8 @@
                                         Width="{Binding DataContext.CardWidth, RelativeSource={RelativeSource AncestorType=Window}}"
                                         Height="{Binding DataContext.CardHeight, RelativeSource={RelativeSource AncestorType=Window}}"
                                         ClipToBounds="True"
-                                        Background="{Binding BackgroundBrush, Converter={StaticResource HexToBrush}}">
+                                        Background="{Binding BackgroundBrush, Converter={StaticResource HexToBrush}}"
+                                        MouseLeftButtonUp="OnCardMouseLeftButtonUp">
                                     <Border.InputBindings>
                                         <MouseBinding MouseAction="LeftDoubleClick"
                                                       Command="{Binding DataContext.EditIdeaCommand, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -361,6 +362,10 @@
                                     </Border.InputBindings>
                                     <Border.ContextMenu>
                                         <ContextMenu>
+                                            <MenuItem Header="プレビュー(_V)"
+                                                      Command="{Binding DataContext.PreviewIdeaCommand, Source={x:Reference CardArea}}"
+                                                      CommandParameter="{Binding}" />
+                                            <Separator />
                                             <MenuItem Header="Markdown形式でコピー(_C)"
                                                       Command="{Binding DataContext.CopyCardMarkdownCommand, Source={x:Reference CardArea}}"
                                                       CommandParameter="{Binding}" />
