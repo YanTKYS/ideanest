@@ -104,7 +104,8 @@
                 <Button Content="閉じる" Style="{StaticResource SecondaryButtonStyle}"
                         IsCancel="True" Click="OnCancel" Margin="0,0,10,0" />
                 <Button Content="開く" Style="{StaticResource PrimaryButtonStyle}"
-                        IsDefault="True" Click="OnOpenSelectedClick" />
+                        x:Name="OpenButton"
+                        IsDefault="True" IsEnabled="False" Click="OnOpenSelectedClick" />
             </StackPanel>
         </Grid>
     </Border>
