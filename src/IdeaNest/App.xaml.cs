@@ -36,7 +36,18 @@ public partial class App : Application
         if (args.Length > 0 && File.Exists(args[0]))
         {
             path = args[0];
-            openedFromArg = true;
+            try
+            {
+                // Validate content; result discarded. LoadStartup re-loads it.
+                // Only mark openedFromArg if the file is actually parseable so that
+                // corrupt files are not added to the recent-files list.
+                WorkspaceService.Load(args[0]);
+                openedFromArg = true;
+            }
+            catch
+            {
+                // Invalid content — LoadStartup will surface the error; skip recent.
+            }
             return true;
         }
 
