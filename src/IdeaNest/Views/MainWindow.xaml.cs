@@ -10,15 +10,14 @@ public partial class MainWindow : Window
     private readonly MainViewModel _vm;
     private bool _sizeTrackingEnabled;
 
-    public MainWindow()
+    public MainWindow() : this(null) { }
+
+    public MainWindow(string? initialFilePath)
     {
         InitializeComponent();
         _vm = new MainViewModel();
         DataContext = _vm;
-        var args = Environment.GetCommandLineArgs();
-        // args[0] is the exe path; args[1] is the file path when launched via
-        // file association or "IdeaNest.exe <path>" from the command line.
-        _vm.LoadStartup(args.Length > 1 ? args[1] : null);
+        _vm.LoadStartup(initialFilePath);
         Loaded += OnLoaded;
         SizeChanged += OnSizeChanged;
         Closing += OnClosing;
