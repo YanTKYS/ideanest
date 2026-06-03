@@ -337,14 +337,15 @@ public class MainViewModel : ViewModelBase
             CurrentFilePath = path;
             IsDirty = false;
             _autoSaveTimer?.Stop();
-            _lastAutoSaveTime = DateTime.Now;
+            // _lastAutoSaveTime は自動保存専用とし、手動保存では更新しない。
+            // これにより SaveStatusText が「自動保存しました」ではなく「保存済み」を返す。
             _autoSaveFailed = false;
             OnPropertyChanged(nameof(SaveStatusText));
             return true;
         }
         catch (Exception ex)
         {
-            _autoSaveFailed = true;
+            // _autoSaveFailed は自動保存専用フラグ。手動保存失敗は MessageBox のみで伝える。
             OnPropertyChanged(nameof(SaveStatusText));
             MessageBox.Show($"保存に失敗しました:\n{ex.Message}", "IdeaNest", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
