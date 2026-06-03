@@ -410,6 +410,7 @@ public class MainViewModel : ViewModelBase
             ReloadFromWorkspace();
             IsDirty = false;
             ResetAutoSaveState();
+            AppSettingsService.AddRecentFile(dlg.FileName);
         }
         catch (Exception ex)
         {
@@ -435,7 +436,9 @@ public class MainViewModel : ViewModelBase
             FileName = string.IsNullOrEmpty(CurrentFilePath) ? "ideas.ideanest" : Path.GetFileName(CurrentFilePath),
         };
         if (dlg.ShowDialog() != true) return false;
-        return SaveTo(dlg.FileName);
+        var ok = SaveTo(dlg.FileName);
+        if (ok) AppSettingsService.AddRecentFile(dlg.FileName);
+        return ok;
     }
 
     private bool SaveTo(string path)
