@@ -30,6 +30,7 @@ public class MainViewModel : ViewModelBase
     private string _selectedTag = string.Empty;
     private string _selectedColor = string.Empty;
     private bool _showArchived;
+    private bool _isTagPanelOpen = true;
 
     public ObservableCollection<IdeaCardViewModel> AllCards { get; } = new();
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
@@ -156,6 +157,24 @@ public class MainViewModel : ViewModelBase
         }
     }
 
+    public bool IsTagPanelOpen
+    {
+        get => _isTagPanelOpen;
+        set
+        {
+            if (SetField(ref _isTagPanelOpen, value))
+            {
+                _workspace.Settings.TagPanelOpen = value;
+                OnPropertyChanged(nameof(TagPanelButtonLabel));
+                OnPropertyChanged(nameof(TagPanelButtonTip));
+                MarkDirty();
+            }
+        }
+    }
+
+    public string TagPanelButtonLabel => IsTagPanelOpen ? "タグ ◀" : "タグ ▶";
+    public string TagPanelButtonTip   => IsTagPanelOpen ? "タグパネルを閉じる" : "タグパネルを表示";
+
     public WorkspaceSettings Settings => _workspace.Settings;
 
     public ICommand NewWorkspaceCommand { get; }
@@ -177,6 +196,7 @@ public class MainViewModel : ViewModelBase
     public ICommand CopyAllMarkdownCommand { get; }
     public ICommand ExportNoteNestCommand { get; }
     public ICommand CopyNoteNestCommand { get; }
+    public ICommand ToggleTagPanelCommand { get; }
 
     public string StatusMessage
     {
@@ -253,6 +273,7 @@ public class MainViewModel : ViewModelBase
         CopyAllMarkdownCommand    = new RelayCommand(_ => CopyAllMarkdown());
         ExportNoteNestCommand     = new RelayCommand(_ => ExportNoteNest());
         CopyNoteNestCommand       = new RelayCommand(_ => CopyNoteNest());
+        ToggleTagPanelCommand     = new RelayCommand(_ => IsTagPanelOpen = !IsTagPanelOpen);
     }
 
     private void RaiseCountAndEmptyStateChanged()
@@ -551,10 +572,14 @@ public class MainViewModel : ViewModelBase
         _selectedTag = _workspace.Settings.SelectedTag ?? string.Empty;
         _selectedColor = _workspace.Settings.SelectedColor ?? string.Empty;
         _showArchived = _workspace.Settings.ShowArchived;
+        _isTagPanelOpen = _workspace.Settings.TagPanelOpen;
         OnPropertyChanged(nameof(SearchText));
         OnPropertyChanged(nameof(SelectedTag));
         OnPropertyChanged(nameof(SelectedColor));
         OnPropertyChanged(nameof(ShowArchived));
+        OnPropertyChanged(nameof(IsTagPanelOpen));
+        OnPropertyChanged(nameof(TagPanelButtonLabel));
+        OnPropertyChanged(nameof(TagPanelButtonTip));
         RefreshTags();
         RefreshVisible();
     }

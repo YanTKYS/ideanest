@@ -52,25 +52,38 @@
             </MenuItem>
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="アーカイブを表示" IsCheckable="True" IsChecked="{Binding ShowArchived, Mode=TwoWay}" />
+                <MenuItem Header="タグパネル" IsCheckable="True" IsChecked="{Binding IsTagPanelOpen, Mode=TwoWay}" />
             </MenuItem>
         </Menu>
 
-        <!-- Search & filter bar -->
-        <Border DockPanel.Dock="Top" Background="Transparent" Padding="20,14,20,10">
+        <!-- Search & filter bar (compact) -->
+        <Border DockPanel.Dock="Top" Background="Transparent" Padding="16,8,16,6">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Grid Grid.Column="0">
+
+                <!-- Tag panel toggle -->
+                <Button Grid.Column="0"
+                        Content="{Binding TagPanelButtonLabel}"
+                        ToolTip="{Binding TagPanelButtonTip}"
+                        Command="{Binding ToggleTagPanelCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        Padding="8,4" Margin="0,0,8,0"
+                        FontSize="12" />
+
+                <!-- Search box -->
+                <Grid Grid.Column="1">
                     <TextBox x:Name="SearchBox"
                              Style="{StaticResource SearchTextBoxStyle}"
                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                              ToolTip="タイトル・本文・タグを検索 (Ctrl+F)"
                              PreviewKeyDown="OnSearchBoxPreviewKeyDown"
-                             Padding="12,9,36,9" />
+                             Padding="10,6,30,6" />
                     <Button Content="✕"
                             Style="{StaticResource IconButtonStyle}"
                             Command="{Binding ClearSearchCommand}"
@@ -79,25 +92,31 @@
                             ToolTip="検索をクリア (Esc)"
                             Visibility="{Binding SearchText, Converter={StaticResource StringToVis}}" />
                 </Grid>
-                <TextBlock Grid.Column="1" Text="{Binding CountText}"
+
+                <!-- Count badge -->
+                <TextBlock Grid.Column="2" Text="{Binding CountText}"
                            Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"
-                           VerticalAlignment="Center" Margin="14,0,0,0" />
-                <Border Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0"
+                           VerticalAlignment="Center" Margin="12,0,0,0" />
+
+                <!-- Active tag chip -->
+                <Border Grid.Column="3" VerticalAlignment="Center" Margin="10,0,0,0"
                         Visibility="{Binding SelectedTag, Converter={StaticResource StringToVis}}"
                         Background="{StaticResource ChipBackgroundBrush}"
                         CornerRadius="9" Padding="10,4">
                     <TextBlock Text="{Binding SelectedTag, StringFormat='#{0}'}"
                                Foreground="{StaticResource ChipForegroundBrush}" FontSize="12" />
                 </Border>
-                <CheckBox Grid.Column="3" Content="アーカイブを表示"
+
+                <!-- Archive toggle -->
+                <CheckBox Grid.Column="4" Content="アーカイブを表示"
                           IsChecked="{Binding ShowArchived, Mode=TwoWay}"
                           Foreground="{StaticResource TextSecondaryBrush}"
-                          VerticalAlignment="Center" Margin="16,0,0,0" />
+                          VerticalAlignment="Center" Margin="14,0,0,0" />
             </Grid>
         </Border>
 
-        <!-- Color filter strip -->
-        <Border DockPanel.Dock="Top" Background="Transparent" Padding="20,0,20,10">
+        <!-- Color filter strip (compact) -->
+        <Border DockPanel.Dock="Top" Background="Transparent" Padding="16,0,16,6">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="色:" Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
@@ -127,7 +146,7 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
-                                        <Border x:Name="Ring" Width="26" Height="26" CornerRadius="13"
+                                        <Border x:Name="Ring" Width="22" Height="22" CornerRadius="11"
                                                 Background="Transparent"
                                                 BorderBrush="Transparent" BorderThickness="2"
                                                 Padding="2">
@@ -152,7 +171,7 @@
         </Border>
 
         <!-- Status bar (must be declared before the fill Grid in DockPanel order) -->
-        <Border DockPanel.Dock="Bottom" Background="Transparent" Padding="20,4">
+        <Border DockPanel.Dock="Bottom" Background="Transparent" Padding="16,4">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -168,15 +187,17 @@
             </Grid>
         </Border>
 
-        <!-- Body: tag list + cards -->
+        <!-- Body: collapsible tag list + cards -->
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200" />
+                <!-- Width="Auto" so the column collapses to 0 when tag panel is Collapsed -->
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- Tag side panel: no hard border, breathable -->
-            <Border Grid.Column="0" Background="Transparent" Padding="16,8,8,8">
+            <!-- Tag side panel: Width="200" so Auto column uses exactly 200 when visible -->
+            <Border Grid.Column="0" Width="200" Background="Transparent" Padding="16,8,8,8"
+                    Visibility="{Binding IsTagPanelOpen, Converter={StaticResource BoolToVis}}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="タグ"
                                Style="{StaticResource SectionHeaderStyle}"
@@ -297,9 +318,19 @@
                                                        TextTrimming="CharacterEllipsis" />
                                         </Grid>
 
-                                        <!-- Footer: action buttons -->
+                                        <!-- Footer: action buttons (visible on hover only) -->
                                         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
                                                     HorizontalAlignment="Right" Margin="0,4,0,0">
+                                            <StackPanel.Style>
+                                                <Style TargetType="StackPanel">
+                                                    <Setter Property="Opacity" Value="0" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Border}}" Value="True">
+                                                            <Setter Property="Opacity" Value="1" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </StackPanel.Style>
                                             <Button Content="📌" ToolTip="ピン留め切替"
                                                     Style="{StaticResource IconButtonStyle}"
                                                     Command="{Binding DataContext.TogglePinCommand, RelativeSource={RelativeSource AncestorType=Window}}"

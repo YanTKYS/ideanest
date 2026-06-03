@@ -16,6 +16,9 @@ public class WorkspaceSettings
     [JsonPropertyName("showArchived")]
     public bool ShowArchived { get; set; }
 
+    [JsonPropertyName("tagPanelOpen")]
+    public bool TagPanelOpen { get; set; } = true;
+
     [JsonPropertyName("windowWidth")]
     public double WindowWidth { get; set; } = 1100;
 
