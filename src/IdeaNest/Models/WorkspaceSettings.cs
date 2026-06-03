@@ -22,6 +22,9 @@ public class WorkspaceSettings
     [JsonPropertyName("cardSize")]
     public string CardSize { get; set; } = "medium";
 
+    [JsonPropertyName("sortMode")]
+    public string SortMode { get; set; } = "UpdatedDesc";
+
     [JsonPropertyName("windowWidth")]
     public double WindowWidth { get; set; } = 1100;
 
