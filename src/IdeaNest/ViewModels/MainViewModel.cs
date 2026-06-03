@@ -1037,8 +1037,29 @@ public class MainViewModel : ViewModelBase
         });
     }
 
-    public void LoadStartup()
+    public void LoadStartup(string? filePath = null)
     {
+        if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+        {
+            try
+            {
+                _workspace = WorkspaceService.Load(filePath);
+                CurrentFilePath = filePath;
+                ReloadFromWorkspace();
+                IsDirty = false;
+                ResetAutoSaveState();
+                return;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"ファイルを開けませんでした:\n{ex.Message}",
+                    "IdeaNest",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                // fall through to new workspace
+            }
+        }
         ReloadFromWorkspace();
     }
 

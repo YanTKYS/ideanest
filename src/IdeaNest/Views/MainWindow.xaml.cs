@@ -15,7 +15,10 @@ public partial class MainWindow : Window
         InitializeComponent();
         _vm = new MainViewModel();
         DataContext = _vm;
-        _vm.LoadStartup();
+        var args = Environment.GetCommandLineArgs();
+        // args[0] is the exe path; args[1] is the file path when launched via
+        // file association or "IdeaNest.exe <path>" from the command line.
+        _vm.LoadStartup(args.Length > 1 ? args[1] : null);
         Loaded += OnLoaded;
         SizeChanged += OnSizeChanged;
         Closing += OnClosing;
