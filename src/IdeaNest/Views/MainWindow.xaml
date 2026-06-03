@@ -130,8 +130,22 @@
         <!-- Color filter strip (compact) + card size toggle -->
         <Border DockPanel.Dock="Top" Background="Transparent" Padding="16,0,16,6">
             <DockPanel>
-                <!-- Card size toggle (right side) -->
+                <!-- Sort + card size toggle (right side) -->
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="並び:" Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="12" VerticalAlignment="Center" Margin="12,0,6,0" />
+                    <ComboBox ItemsSource="{Binding SortOptions}"
+                              SelectedValue="{Binding SortMode, Mode=TwoWay}"
+                              SelectedValuePath="Value"
+                              DisplayMemberPath="DisplayName"
+                              FontSize="12" MinWidth="106"
+                              VerticalContentAlignment="Center"
+                              ToolTip="カードの並び順を選択" />
+                    <Button Content="🔀" ToolTip="再シャッフル"
+                            Style="{StaticResource IconButtonStyle}"
+                            Command="{Binding ReshuffleCommand}"
+                            Padding="6,4" Margin="4,0,0,0"
+                            Visibility="{Binding IsShuffleMode, Converter={StaticResource BoolToVis}}" />
                     <TextBlock Text="サイズ:" Foreground="{StaticResource TextSecondaryBrush}"
                                FontSize="12" VerticalAlignment="Center" Margin="12,0,6,0" />
                     <Button Content="S" ToolTip="小 (コンパクト)"

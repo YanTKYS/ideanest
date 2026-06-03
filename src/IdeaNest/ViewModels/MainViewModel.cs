@@ -32,11 +32,21 @@ public class MainViewModel : ViewModelBase
     private bool _showArchived;
     private bool _isTagPanelOpen = true;
     private string _cardSize = "medium";
+    private string _sortMode = "UpdatedDesc";
+    private List<string> _shuffleOrder = new();
 
     public ObservableCollection<IdeaCardViewModel> AllCards { get; } = new();
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
     public ObservableCollection<string> AvailableTags { get; } = new();
     public ObservableCollection<TagItemViewModel> TagItems { get; } = new();
+    public ObservableCollection<SortOptionViewModel> SortOptions { get; } = new()
+    {
+        new SortOptionViewModel("UpdatedDesc", "更新日時順"),
+        new SortOptionViewModel("CreatedDesc", "作成日時順"),
+        new SortOptionViewModel("TitleAsc",    "タイトル順"),
+        new SortOptionViewModel("Shuffle",     "シャッフル"),
+    };
+
     public ObservableCollection<ColorFilterItemViewModel> ColorItems { get; } = new()
     {
         new ColorFilterItemViewModel("white",  "白"),
@@ -204,6 +214,31 @@ public class MainViewModel : ViewModelBase
     public bool IsCardSizeMedium => _cardSize == "medium";
     public bool IsCardSizeLarge  => _cardSize == "large";
 
+    public string SortMode
+    {
+        get => _sortMode;
+        set
+        {
+            var v = value switch
+            {
+                "CreatedDesc" => "CreatedDesc",
+                "TitleAsc"    => "TitleAsc",
+                "Shuffle"     => "Shuffle",
+                _             => "UpdatedDesc",
+            };
+            if (SetField(ref _sortMode, v))
+            {
+                _workspace.Settings.SortMode = v;
+                OnPropertyChanged(nameof(IsShuffleMode));
+                if (v == "Shuffle") GenerateShuffleOrder();
+                RefreshVisible();
+                MarkDirty();
+            }
+        }
+    }
+
+    public bool IsShuffleMode => _sortMode == "Shuffle";
+
     public WorkspaceSettings Settings => _workspace.Settings;
 
     public ICommand NewWorkspaceCommand { get; }
@@ -227,6 +262,7 @@ public class MainViewModel : ViewModelBase
     public ICommand CopyNoteNestCommand { get; }
     public ICommand ToggleTagPanelCommand { get; }
     public ICommand SetCardSizeCommand { get; }
+    public ICommand ReshuffleCommand { get; }
 
     public string StatusMessage
     {
@@ -305,6 +341,28 @@ public class MainViewModel : ViewModelBase
         CopyNoteNestCommand       = new RelayCommand(_ => CopyNoteNest());
         ToggleTagPanelCommand     = new RelayCommand(_ => IsTagPanelOpen = !IsTagPanelOpen);
         SetCardSizeCommand        = new RelayCommand(p => CardSize = p as string ?? "medium");
+        ReshuffleCommand          = new RelayCommand(_ => Reshuffle());
+    }
+
+    private void GenerateShuffleOrder()
+    {
+        var ids = AllCards.Where(c => !c.IsPinned).Select(c => c.Id).ToList();
+        var rng = new Random();
+        for (int i = ids.Count - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            (ids[i], ids[j]) = (ids[j], ids[i]);
+        }
+        _shuffleOrder = ids;
+    }
+
+    private void Reshuffle()
+    {
+        GenerateShuffleOrder();
+        RefreshVisible();
+        // Reshuffle is a user-visible change worth persisting only as "we are in
+        // Shuffle mode" — the order itself is not saved. No MarkDirty here since
+        // SortMode itself did not change.
     }
 
     private void RaiseCountAndEmptyStateChanged()
@@ -418,6 +476,7 @@ public class MainViewModel : ViewModelBase
         _workspace.Settings.SelectedColor = SelectedColor;
         _workspace.Settings.ShowArchived = ShowArchived;
         _workspace.Settings.CardSize = _cardSize;
+        _workspace.Settings.SortMode = _sortMode;
     }
 
     public bool ConfirmDiscardChanges()
@@ -606,6 +665,14 @@ public class MainViewModel : ViewModelBase
         _showArchived = _workspace.Settings.ShowArchived;
         _isTagPanelOpen = _workspace.Settings.TagPanelOpen;
         _cardSize = _workspace.Settings.CardSize switch { "small" => "small", "large" => "large", _ => "medium" };
+        _sortMode = _workspace.Settings.SortMode switch
+        {
+            "CreatedDesc" => "CreatedDesc",
+            "TitleAsc"    => "TitleAsc",
+            "Shuffle"     => "Shuffle",
+            _             => "UpdatedDesc",
+        };
+        _shuffleOrder.Clear();
         OnPropertyChanged(nameof(SearchText));
         OnPropertyChanged(nameof(SelectedTag));
         OnPropertyChanged(nameof(SelectedColor));
@@ -619,6 +686,8 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsCardSizeSmall));
         OnPropertyChanged(nameof(IsCardSizeMedium));
         OnPropertyChanged(nameof(IsCardSizeLarge));
+        OnPropertyChanged(nameof(SortMode));
+        OnPropertyChanged(nameof(IsShuffleMode));
         RefreshTags();
         RefreshVisible();
     }
@@ -923,15 +992,49 @@ public class MainViewModel : ViewModelBase
                 || c.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)));
         }
 
-        var ordered = items
-            .OrderByDescending(c => c.IsPinned)
-            .ThenByDescending(c => c.UpdatedAt)
-            .ToList();
+        var pinned = items.Where(c => c.IsPinned)
+                          .OrderByDescending(c => c.UpdatedAt);
+
+        var rest = items.Where(c => !c.IsPinned);
+        rest = _sortMode switch
+        {
+            "CreatedDesc" => rest.OrderByDescending(c => c.CreatedAt),
+            "TitleAsc"    => rest.OrderBy(c => c.DisplayTitle, StringComparer.CurrentCulture),
+            "Shuffle"     => OrderByShuffle(rest),
+            _             => rest.OrderByDescending(c => c.UpdatedAt),
+        };
+
+        var ordered = pinned.Concat(rest).ToList();
 
         VisibleCards.Clear();
         foreach (var c in ordered) VisibleCards.Add(c);
 
         RaiseCountAndEmptyStateChanged();
+    }
+
+    private IEnumerable<IdeaCardViewModel> OrderByShuffle(IEnumerable<IdeaCardViewModel> source)
+    {
+        // Lazily seed and append unknown ids so freshly added cards still appear
+        // in shuffle mode without losing the previously-shown order.
+        if (_shuffleOrder.Count == 0)
+        {
+            GenerateShuffleOrder();
+        }
+        else
+        {
+            foreach (var c in AllCards)
+            {
+                // Newly added cards surface at the top of shuffle mode so the user
+                // sees their just-added idea instead of it being buried.
+                if (!c.IsPinned && !_shuffleOrder.Contains(c.Id))
+                    _shuffleOrder.Insert(0, c.Id);
+            }
+        }
+        return source.OrderBy(c =>
+        {
+            var idx = _shuffleOrder.IndexOf(c.Id);
+            return idx >= 0 ? idx : int.MaxValue;
+        });
     }
 
     public void LoadStartup()
