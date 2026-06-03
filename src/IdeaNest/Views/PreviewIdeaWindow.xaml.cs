@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
@@ -8,38 +9,63 @@ namespace IdeaNest.Views;
 
 public partial class PreviewIdeaWindow : Window
 {
-    private readonly IdeaCardViewModel _card;
-    private readonly Action _onEdit;
-    private readonly Action _onTogglePin;
-    private readonly Action _onToggleArchive;
-    private readonly Action _onCopyMarkdown;
+    private readonly IReadOnlyList<IdeaCardViewModel> _cards;
+    private readonly Action<IdeaCardViewModel> _onEdit;
+    private readonly Action<IdeaCardViewModel> _onTogglePin;
+    private readonly Action<IdeaCardViewModel> _onToggleArchive;
+    private readonly Action<IdeaCardViewModel> _onCopyMarkdown;
+    private int _currentIndex;
+
+    private IdeaCardViewModel CurrentCard => _cards[_currentIndex];
 
     public PreviewIdeaWindow(
-        IdeaCardViewModel card,
-        Action onEdit,
-        Action onTogglePin,
-        Action onToggleArchive,
-        Action onCopyMarkdown)
+        IReadOnlyList<IdeaCardViewModel> cards,
+        int initialIndex,
+        Action<IdeaCardViewModel> onEdit,
+        Action<IdeaCardViewModel> onTogglePin,
+        Action<IdeaCardViewModel> onToggleArchive,
+        Action<IdeaCardViewModel> onCopyMarkdown)
     {
         InitializeComponent();
-        _card = card;
+        _cards = cards;
         _onEdit = onEdit;
         _onTogglePin = onTogglePin;
         _onToggleArchive = onToggleArchive;
         _onCopyMarkdown = onCopyMarkdown;
-        DataContext = card;
-        UpdateToggleButtonLabels();
-        card.PropertyChanged += OnCardPropertyChanged;
-        Closed += (_, _) => card.PropertyChanged -= OnCardPropertyChanged;
+        _currentIndex = initialIndex;
+        DataContext = CurrentCard;
+        UpdateButtonStates();
+        CurrentCard.PropertyChanged += OnCardPropertyChanged;
+        Closed += (_, _) => CurrentCard.PropertyChanged -= OnCardPropertyChanged;
         PreviewKeyDown += OnPreviewKeyDown;
+    }
+
+    private void NavigateTo(int index)
+    {
+        if (index < 0 || index >= _cards.Count) return;
+        CurrentCard.PropertyChanged -= OnCardPropertyChanged;
+        _currentIndex = index;
+        DataContext = CurrentCard;
+        CurrentCard.PropertyChanged += OnCardPropertyChanged;
+        UpdateButtonStates();
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape)
+        switch (e.Key)
         {
-            Close();
-            e.Handled = true;
+            case Key.Escape:
+                Close();
+                e.Handled = true;
+                break;
+            case Key.Left:
+                NavigateTo(_currentIndex - 1);
+                e.Handled = true;
+                break;
+            case Key.Right:
+                NavigateTo(_currentIndex + 1);
+                e.Handled = true;
+                break;
         }
     }
 
@@ -47,19 +73,23 @@ public partial class PreviewIdeaWindow : Window
     {
         if (e.PropertyName is nameof(IdeaCardViewModel.IsPinned) or nameof(IdeaCardViewModel.IsArchived))
         {
-            UpdateToggleButtonLabels();
+            UpdateButtonStates();
         }
     }
 
-    private void UpdateToggleButtonLabels()
+    private void UpdateButtonStates()
     {
-        PinButton.Content = _card.IsPinned ? "📌 ピン留め解除" : "📌 ピン留め";
-        ArchiveButton.Content = _card.IsArchived ? "📤 アーカイブ解除" : "📥 アーカイブ";
+        PinButton.Content = CurrentCard.IsPinned ? "📌 ピン留め解除" : "📌 ピン留め";
+        ArchiveButton.Content = CurrentCard.IsArchived ? "📤 アーカイブ解除" : "📥 アーカイブ";
+        PrevButton.IsEnabled = _currentIndex > 0;
+        NextButton.IsEnabled = _currentIndex < _cards.Count - 1;
     }
 
-    private void OnEditClick(object sender, RoutedEventArgs e) => _onEdit();
-    private void OnTogglePinClick(object sender, RoutedEventArgs e) => _onTogglePin();
-    private void OnToggleArchiveClick(object sender, RoutedEventArgs e) => _onToggleArchive();
-    private void OnCopyClick(object sender, RoutedEventArgs e) => _onCopyMarkdown();
+    private void OnPrevClick(object sender, RoutedEventArgs e) => NavigateTo(_currentIndex - 1);
+    private void OnNextClick(object sender, RoutedEventArgs e) => NavigateTo(_currentIndex + 1);
+    private void OnEditClick(object sender, RoutedEventArgs e) => _onEdit(CurrentCard);
+    private void OnTogglePinClick(object sender, RoutedEventArgs e) => _onTogglePin(CurrentCard);
+    private void OnToggleArchiveClick(object sender, RoutedEventArgs e) => _onToggleArchive(CurrentCard);
+    private void OnCopyClick(object sender, RoutedEventArgs e) => _onCopyMarkdown(CurrentCard);
     private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
 }
