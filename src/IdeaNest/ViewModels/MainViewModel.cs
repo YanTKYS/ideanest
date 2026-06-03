@@ -247,6 +247,7 @@ public class MainViewModel : ViewModelBase
     public ICommand SaveAsCommand { get; }
     public ICommand AddIdeaCommand { get; }
     public ICommand EditIdeaCommand { get; }
+    public ICommand PreviewIdeaCommand { get; }
     public ICommand DeleteIdeaCommand { get; }
     public ICommand TogglePinCommand { get; }
     public ICommand ToggleArchiveCommand { get; }
@@ -326,6 +327,7 @@ public class MainViewModel : ViewModelBase
         SaveAsCommand          = new RelayCommand(_ => SaveAs());
         AddIdeaCommand         = new RelayCommand(_ => AddIdea());
         EditIdeaCommand        = new RelayCommand(p => EditIdea(p as IdeaCardViewModel));
+        PreviewIdeaCommand     = new RelayCommand(p => PreviewIdea(p as IdeaCardViewModel));
         DeleteIdeaCommand      = new RelayCommand(p => DeleteIdea(p as IdeaCardViewModel));
         TogglePinCommand       = new RelayCommand(p => TogglePin(p as IdeaCardViewModel));
         ToggleArchiveCommand   = new RelayCommand(p => ToggleArchive(p as IdeaCardViewModel));
@@ -537,6 +539,23 @@ public class MainViewModel : ViewModelBase
         MarkDirty();
         RefreshTags();
         RefreshVisible();
+    }
+
+    private void PreviewIdea(IdeaCardViewModel? card)
+    {
+        if (card == null) return;
+        var dlg = new PreviewIdeaWindow(
+            card,
+            onEdit: () => EditIdea(card),
+            onTogglePin: () => TogglePin(card),
+            onToggleArchive: () => ToggleArchive(card),
+            onCopyMarkdown: () => CopyCardMarkdown(card))
+        {
+            Owner = Application.Current?.MainWindow,
+        };
+        // Preview itself does not mutate state — IsDirty is only set by the
+        // delegated actions (EditIdea / TogglePin / ToggleArchive) when invoked.
+        dlg.ShowDialog();
     }
 
     private void EditIdea(IdeaCardViewModel? card)

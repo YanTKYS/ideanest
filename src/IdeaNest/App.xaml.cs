@@ -74,17 +74,6 @@ public partial class App : Application
                 continue;
             }
 
-            if (!File.Exists(picked))
-            {
-                MessageBox.Show(
-                    $"ファイルが見つかりませんでした:\n{picked}\n\n履歴から外します。",
-                    "IdeaNest",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                AppSettingsService.RemoveRecentFile(picked);
-                continue;
-            }
-
             try
             {
                 // Validate by attempting to parse; the workspace itself is reloaded

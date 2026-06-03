@@ -92,6 +92,7 @@ public class IdeaCardViewModel : ViewModelBase
     public List<string> TagsList => Tags ?? new List<string>();
 
     public string UpdatedAtText => UpdatedAt.ToString("yyyy/MM/dd HH:mm");
+    public string CreatedAtText => CreatedAt.ToString("yyyy/MM/dd HH:mm");
 
     public string BackgroundBrush => Color switch
     {
