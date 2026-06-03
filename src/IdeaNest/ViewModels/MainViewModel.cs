@@ -544,9 +544,12 @@ public class MainViewModel : ViewModelBase
     private void PreviewIdea(IdeaCardViewModel? card)
     {
         if (card == null) return;
-        var dlg = new PreviewIdeaWindow(
+        // Preview owns any nested dialog (Edit) so the nested ShowDialog stacks
+        // on top of the preview itself rather than behind it.
+        PreviewIdeaWindow? dlg = null;
+        dlg = new PreviewIdeaWindow(
             card,
-            onEdit: () => EditIdea(card),
+            onEdit: () => EditIdea(card, dlg),
             onTogglePin: () => TogglePin(card),
             onToggleArchive: () => ToggleArchive(card),
             onCopyMarkdown: () => CopyCardMarkdown(card))
@@ -558,7 +561,7 @@ public class MainViewModel : ViewModelBase
         dlg.ShowDialog();
     }
 
-    private void EditIdea(IdeaCardViewModel? card)
+    private void EditIdea(IdeaCardViewModel? card, Window? owner = null)
     {
         if (card == null) return;
         var vm = new EditIdeaViewModel(card.Model);
@@ -566,7 +569,7 @@ public class MainViewModel : ViewModelBase
         {
             Title = "アイデア編集",
             DataContext = vm,
-            Owner = Application.Current?.MainWindow,
+            Owner = owner ?? Application.Current?.MainWindow,
         };
         var result = dlg.ShowDialog();
         if (result == true)
