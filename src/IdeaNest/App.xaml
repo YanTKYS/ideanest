@@ -72,11 +72,11 @@
             </Setter>
         </Style>
 
-        <!-- Search TextBox: same as ModernTextBox but slightly larger -->
+        <!-- Search TextBox: compact, same look as ModernTextBox -->
         <Style x:Key="SearchTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource ModernTextBoxStyle}">
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Padding" Value="12,9" />
-            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="MinHeight" Value="30" />
         </Style>
 
         <!-- Default TextBox (used by dialog inputs that don't pick a style) -->
