@@ -8,13 +8,10 @@
         Background="{StaticResource AppBackgroundBrush}"
         TextOptions.TextFormattingMode="Display"
         UseLayoutRounding="True">
-    <Border Margin="24"
+    <Border Margin="0"
             Background="{Binding BackgroundBrush, Converter={StaticResource HexToBrush}}"
-            CornerRadius="12"
-            Padding="28">
-        <Border.Effect>
-            <DropShadowEffect Color="#1F2937" Opacity="0.08" BlurRadius="14" ShadowDepth="2" Direction="270" />
-        </Border.Effect>
+            CornerRadius="0"
+            Padding="16">
         <DockPanel>
             <!-- Header: pin + title + status badges -->
             <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
@@ -91,7 +88,7 @@
             </Grid>
 
             <!-- Body (scrollable, larger font) -->
-            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="18">
+            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="6" Padding="14">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <TextBlock Text="{Binding Body}"
                                TextWrapping="Wrap"

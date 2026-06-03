@@ -355,11 +355,6 @@
                                         ClipToBounds="True"
                                         Background="{Binding BackgroundBrush, Converter={StaticResource HexToBrush}}"
                                         MouseLeftButtonUp="OnCardMouseLeftButtonUp">
-                                    <Border.InputBindings>
-                                        <MouseBinding MouseAction="LeftDoubleClick"
-                                                      Command="{Binding DataContext.EditIdeaCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                      CommandParameter="{Binding}" />
-                                    </Border.InputBindings>
                                     <Border.ContextMenu>
                                         <ContextMenu>
                                             <MenuItem Header="プレビュー(_V)"
