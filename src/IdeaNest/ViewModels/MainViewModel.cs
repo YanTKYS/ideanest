@@ -544,15 +544,20 @@ public class MainViewModel : ViewModelBase
     private void PreviewIdea(IdeaCardViewModel? card)
     {
         if (card == null) return;
+        var cards = VisibleCards.ToList();
+        var index = cards.IndexOf(card);
+        if (index < 0) index = 0;
+
         // Preview owns any nested dialog (Edit) so the nested ShowDialog stacks
         // on top of the preview itself rather than behind it.
         PreviewIdeaWindow? dlg = null;
         dlg = new PreviewIdeaWindow(
-            card,
-            onEdit: () => EditIdea(card, dlg),
-            onTogglePin: () => TogglePin(card),
-            onToggleArchive: () => ToggleArchive(card),
-            onCopyMarkdown: () => CopyCardMarkdown(card))
+            cards,
+            index,
+            onEdit: c => EditIdea(c, dlg),
+            onTogglePin: c => TogglePin(c),
+            onToggleArchive: c => ToggleArchive(c),
+            onCopyMarkdown: c => CopyCardMarkdown(c))
         {
             Owner = Application.Current?.MainWindow,
         };
