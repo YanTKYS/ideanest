@@ -318,15 +318,20 @@
                                                        TextTrimming="CharacterEllipsis" />
                                         </Grid>
 
-                                        <!-- Footer: action buttons (visible on hover only) -->
+                                        <!-- Footer: action buttons (visible & interactive on hover only) -->
                                         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
                                                     HorizontalAlignment="Right" Margin="0,4,0,0">
                                             <StackPanel.Style>
                                                 <Style TargetType="StackPanel">
+                                                    <!-- Default: invisible, not clickable, skipped by Tab -->
                                                     <Setter Property="Opacity" Value="0" />
+                                                    <Setter Property="IsHitTestVisible" Value="False" />
+                                                    <Setter Property="KeyboardNavigation.TabNavigation" Value="None" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Border}}" Value="True">
                                                             <Setter Property="Opacity" Value="1" />
+                                                            <Setter Property="IsHitTestVisible" Value="True" />
+                                                            <Setter Property="KeyboardNavigation.TabNavigation" Value="Local" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
