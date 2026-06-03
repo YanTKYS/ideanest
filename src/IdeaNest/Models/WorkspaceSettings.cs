@@ -19,6 +19,9 @@ public class WorkspaceSettings
     [JsonPropertyName("tagPanelOpen")]
     public bool TagPanelOpen { get; set; } = true;
 
+    [JsonPropertyName("cardSize")]
+    public string CardSize { get; set; } = "medium";
+
     [JsonPropertyName("windowWidth")]
     public double WindowWidth { get; set; } = 1100;
 

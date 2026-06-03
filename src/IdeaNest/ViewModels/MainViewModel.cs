@@ -31,6 +31,7 @@ public class MainViewModel : ViewModelBase
     private string _selectedColor = string.Empty;
     private bool _showArchived;
     private bool _isTagPanelOpen = true;
+    private string _cardSize = "medium";
 
     public ObservableCollection<IdeaCardViewModel> AllCards { get; } = new();
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
@@ -175,6 +176,32 @@ public class MainViewModel : ViewModelBase
     public string TagPanelButtonLabel => IsTagPanelOpen ? "タグ ◀" : "タグ ▶";
     public string TagPanelButtonTip   => IsTagPanelOpen ? "タグパネルを閉じる" : "タグパネルを表示";
 
+    public string CardSize
+    {
+        get => _cardSize;
+        set
+        {
+            var v = value switch { "small" => "small", "large" => "large", _ => "medium" };
+            if (SetField(ref _cardSize, v))
+            {
+                _workspace.Settings.CardSize = v;
+                OnPropertyChanged(nameof(CardWidth));
+                OnPropertyChanged(nameof(CardHeight));
+                OnPropertyChanged(nameof(IsCardSizeSmall));
+                OnPropertyChanged(nameof(IsCardSizeMedium));
+                OnPropertyChanged(nameof(IsCardSizeLarge));
+                MarkDirty();
+            }
+        }
+    }
+
+    public double CardWidth  => _cardSize switch { "small" => 184, "large" => 340, _ => 252 };
+    public double CardHeight => _cardSize switch { "small" => 148, "large" => 280, _ => 212 };
+
+    public bool IsCardSizeSmall  => _cardSize == "small";
+    public bool IsCardSizeMedium => _cardSize == "medium";
+    public bool IsCardSizeLarge  => _cardSize == "large";
+
     public WorkspaceSettings Settings => _workspace.Settings;
 
     public ICommand NewWorkspaceCommand { get; }
@@ -197,6 +224,7 @@ public class MainViewModel : ViewModelBase
     public ICommand ExportNoteNestCommand { get; }
     public ICommand CopyNoteNestCommand { get; }
     public ICommand ToggleTagPanelCommand { get; }
+    public ICommand SetCardSizeCommand { get; }
 
     public string StatusMessage
     {
@@ -274,6 +302,7 @@ public class MainViewModel : ViewModelBase
         ExportNoteNestCommand     = new RelayCommand(_ => ExportNoteNest());
         CopyNoteNestCommand       = new RelayCommand(_ => CopyNoteNest());
         ToggleTagPanelCommand     = new RelayCommand(_ => IsTagPanelOpen = !IsTagPanelOpen);
+        SetCardSizeCommand        = new RelayCommand(p => CardSize = p as string ?? "medium");
     }
 
     private void RaiseCountAndEmptyStateChanged()
@@ -386,6 +415,7 @@ public class MainViewModel : ViewModelBase
         _workspace.Settings.SelectedTag = SelectedTag;
         _workspace.Settings.SelectedColor = SelectedColor;
         _workspace.Settings.ShowArchived = ShowArchived;
+        _workspace.Settings.CardSize = _cardSize;
     }
 
     public bool ConfirmDiscardChanges()
@@ -573,6 +603,7 @@ public class MainViewModel : ViewModelBase
         _selectedColor = _workspace.Settings.SelectedColor ?? string.Empty;
         _showArchived = _workspace.Settings.ShowArchived;
         _isTagPanelOpen = _workspace.Settings.TagPanelOpen;
+        _cardSize = _workspace.Settings.CardSize switch { "small" => "small", "large" => "large", _ => "medium" };
         OnPropertyChanged(nameof(SearchText));
         OnPropertyChanged(nameof(SelectedTag));
         OnPropertyChanged(nameof(SelectedColor));
@@ -580,6 +611,12 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsTagPanelOpen));
         OnPropertyChanged(nameof(TagPanelButtonLabel));
         OnPropertyChanged(nameof(TagPanelButtonTip));
+        OnPropertyChanged(nameof(CardSize));
+        OnPropertyChanged(nameof(CardWidth));
+        OnPropertyChanged(nameof(CardHeight));
+        OnPropertyChanged(nameof(IsCardSizeSmall));
+        OnPropertyChanged(nameof(IsCardSizeMedium));
+        OnPropertyChanged(nameof(IsCardSizeLarge));
         RefreshTags();
         RefreshVisible();
     }
