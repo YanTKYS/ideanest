@@ -248,7 +248,7 @@ public class MainViewModel : ViewModelBase
     public ICommand AddIdeaCommand { get; }
     public ICommand EditIdeaCommand { get; }
     public ICommand PreviewIdeaCommand { get; }
-    public ICommand RandomPreviewCommand { get; }
+    public RelayCommand RandomPreviewCommand { get; }
     public ICommand DeleteIdeaCommand { get; }
     public ICommand TogglePinCommand { get; }
     public ICommand ToggleArchiveCommand { get; }
@@ -1049,6 +1049,7 @@ public class MainViewModel : ViewModelBase
         foreach (var c in ordered) VisibleCards.Add(c);
 
         RaiseCountAndEmptyStateChanged();
+        RandomPreviewCommand.RaiseCanExecuteChanged();
     }
 
     private IEnumerable<IdeaCardViewModel> OrderByShuffle(IEnumerable<IdeaCardViewModel> source)
