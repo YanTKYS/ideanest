@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -59,13 +60,21 @@ public class MainViewModel : ViewModelBase
         new ColorFilterItemViewModel("gray",   "グレー"),
     };
 
+    private static readonly string AppVersion = FormatAppVersion();
+
+    private static string FormatAppVersion()
+    {
+        var v = Assembly.GetExecutingAssembly().GetName().Version;
+        return v != null ? $"ver{v.Major}.{v.Minor}.{v.Build}" : string.Empty;
+    }
+
     public string Title
     {
         get
         {
             var fileLabel = string.IsNullOrEmpty(_currentFilePath) ? "(未保存)" : Path.GetFileName(_currentFilePath);
             var dirtyMark = _isDirty ? "*" : string.Empty;
-            return $"IdeaNest - {fileLabel}{dirtyMark}";
+            return $"IdeaNest - {fileLabel}{dirtyMark} - {AppVersion}";
         }
     }
 
