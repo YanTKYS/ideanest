@@ -66,6 +66,9 @@
                               Command="{Binding SetCardSizeCommand}" CommandParameter="large" />
                 </MenuItem>
             </MenuItem>
+            <MenuItem Header="ヘルプ(_H)">
+                <MenuItem Header="チュートリアル(_T)" Click="OnTutorialClick" />
+            </MenuItem>
         </Menu>
 
         <!-- Search & filter bar (compact) -->

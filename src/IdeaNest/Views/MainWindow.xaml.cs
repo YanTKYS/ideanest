@@ -89,6 +89,12 @@ public partial class MainWindow : Window
         Close();
     }
 
+    private void OnTutorialClick(object sender, RoutedEventArgs e)
+    {
+        var window = new TutorialWindow { Owner = this };
+        window.ShowDialog();
+    }
+
     private void OnCardMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         if (sender is not FrameworkElement fe || fe.DataContext is not IdeaCardViewModel card)
