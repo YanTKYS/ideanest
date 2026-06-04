@@ -79,7 +79,7 @@ public partial class StartupWindow : Window
             AppSettingsService.RemoveRecentFile(item.FullPath);
             if (_items.Count == 0)
                 EmptyHint.Visibility = Visibility.Visible;
-            SyncOpenButton();
+            SyncButtons();
             return;
         }
 
