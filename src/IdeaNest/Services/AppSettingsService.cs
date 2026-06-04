@@ -72,4 +72,12 @@ public static class AppSettingsService
             string.Equals(p, path, StringComparison.OrdinalIgnoreCase));
         if (removed > 0) Save(settings);
     }
+
+    public static void ClearRecentFiles()
+    {
+        var settings = Load();
+        if (settings.RecentFiles.Count == 0) return;
+        settings.RecentFiles.Clear();
+        Save(settings);
+    }
 }

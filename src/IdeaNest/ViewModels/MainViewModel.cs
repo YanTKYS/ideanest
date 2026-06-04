@@ -248,6 +248,7 @@ public class MainViewModel : ViewModelBase
     public ICommand AddIdeaCommand { get; }
     public ICommand EditIdeaCommand { get; }
     public ICommand PreviewIdeaCommand { get; }
+    public ICommand RandomPreviewCommand { get; }
     public ICommand DeleteIdeaCommand { get; }
     public ICommand TogglePinCommand { get; }
     public ICommand ToggleArchiveCommand { get; }
@@ -328,6 +329,7 @@ public class MainViewModel : ViewModelBase
         AddIdeaCommand         = new RelayCommand(_ => AddIdea());
         EditIdeaCommand        = new RelayCommand(p => EditIdea(p as IdeaCardViewModel));
         PreviewIdeaCommand     = new RelayCommand(p => PreviewIdea(p as IdeaCardViewModel));
+        RandomPreviewCommand   = new RelayCommand(_ => RandomPreview(), _ => VisibleCards.Count > 0);
         DeleteIdeaCommand      = new RelayCommand(p => DeleteIdea(p as IdeaCardViewModel));
         TogglePinCommand       = new RelayCommand(p => TogglePin(p as IdeaCardViewModel));
         ToggleArchiveCommand   = new RelayCommand(p => ToggleArchive(p as IdeaCardViewModel));
@@ -564,6 +566,13 @@ public class MainViewModel : ViewModelBase
         // Preview itself does not mutate state — IsDirty is only set by the
         // delegated actions (EditIdea / TogglePin / ToggleArchive) when invoked.
         dlg.ShowDialog();
+    }
+
+    private void RandomPreview()
+    {
+        if (VisibleCards.Count == 0) return;
+        var card = VisibleCards[new Random().Next(VisibleCards.Count)];
+        PreviewIdea(card);
     }
 
     private void EditIdea(IdeaCardViewModel? card, Window? owner = null)
