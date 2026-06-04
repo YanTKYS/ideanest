@@ -17,6 +17,7 @@
         <KeyBinding Modifiers="Ctrl+Shift"  Key="S" Command="{Binding SaveAsCommand}" />
         <KeyBinding Modifiers="Ctrl+Shift"  Key="N" Command="{Binding AddIdeaCommand}" />
         <KeyBinding Modifiers="Ctrl+Shift"  Key="C" Command="{Binding CopyAllMarkdownCommand}" />
+        <KeyBinding Modifiers="Ctrl+Shift"  Key="R" Command="{Binding RandomPreviewCommand}" />
     </Window.InputBindings>
 
     <DockPanel>
@@ -49,6 +50,9 @@
                           Command="{Binding CopyAllMarkdownCommand}" />
                 <MenuItem Header="表示中カードをNoteNest向けにコピー(_N)"
                           Command="{Binding CopyNoteNestCommand}" />
+                <Separator />
+                <MenuItem Header="壁打ち — ランダムにプレビュー(_R)" InputGestureText="Ctrl+Shift+R"
+                          Command="{Binding RandomPreviewCommand}" />
             </MenuItem>
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="アーカイブを表示" IsCheckable="True" IsChecked="{Binding ShowArchived, Mode=TwoWay}" />
@@ -149,6 +153,10 @@
                             Command="{Binding ReshuffleCommand}"
                             Padding="6,4" Margin="4,0,0,0"
                             Visibility="{Binding IsShuffleMode, Converter={StaticResource BoolToVis}}" />
+                    <Button Content="🎲" ToolTip="壁打ち — ランダムに 1 枚プレビュー (Ctrl+Shift+R)"
+                            Style="{StaticResource IconButtonStyle}"
+                            Command="{Binding RandomPreviewCommand}"
+                            Padding="6,4" Margin="4,0,0,0" />
                     <TextBlock Text="サイズ:" Foreground="{StaticResource TextSecondaryBrush}"
                                FontSize="12" VerticalAlignment="Center" Margin="12,0,6,0" />
                     <Button Content="S" ToolTip="小 (コンパクト)"

@@ -25,15 +25,17 @@ public partial class StartupWindow : Window
                 .Select(p => new RecentFileItem(p)));
 
         RecentList.ItemsSource = _items;
-        RecentList.SelectionChanged += (_, _) => SyncOpenButton();
+        RecentList.SelectionChanged += (_, _) => SyncButtons();
 
+        SyncButtons();
         if (_items.Count == 0)
             EmptyHint.Visibility = Visibility.Visible;
     }
 
-    private void SyncOpenButton()
+    private void SyncButtons()
     {
         OpenButton.IsEnabled = RecentList.SelectedItem != null;
+        ClearHistoryButton.IsEnabled = _items.Count > 0;
     }
 
     private void OnNewClick(object sender, RoutedEventArgs e)
@@ -51,6 +53,14 @@ public partial class StartupWindow : Window
     private void OnRecentDoubleClick(object sender, MouseButtonEventArgs e)
     {
         TryAcceptSelection();
+    }
+
+    private void OnClearHistoryClick(object sender, RoutedEventArgs e)
+    {
+        AppSettingsService.ClearRecentFiles();
+        _items.Clear();
+        EmptyHint.Visibility = Visibility.Visible;
+        SyncButtons();
     }
 
     private void TryAcceptSelection()
