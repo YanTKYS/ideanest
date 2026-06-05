@@ -84,9 +84,11 @@
                                 Click="OnToggleArchiveClick" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,8,0">
-                        <Button x:Name="PrevButton" Content="← 前へ" Style="{StaticResource SecondaryButtonStyle}"
+                        <Button x:Name="PrevButton" Content="← 前" Style="{StaticResource SecondaryButtonStyle}"
+                                ToolTip="前のカード (←)"
                                 Click="OnPrevClick" Margin="0,0,4,0" />
-                        <Button x:Name="NextButton" Content="次へ →" Style="{StaticResource SecondaryButtonStyle}"
+                        <Button x:Name="NextButton" Content="次 →" Style="{StaticResource SecondaryButtonStyle}"
+                                ToolTip="次のカード (→)"
                                 Click="OnNextClick" />
                     </StackPanel>
                     <Button Grid.Column="2" Content="閉じる" Style="{StaticResource PrimaryButtonStyle}"
@@ -94,14 +96,16 @@
                 </Grid>
             </Grid>
 
-            <!-- Body (scrollable, larger font) -->
-            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="6" Padding="14">
+            <!-- Body (scrollable, larger font). Background matches card color so it
+                 doesn't look like an editable input field. -->
+            <Border Background="{Binding BackgroundBrush, Converter={StaticResource HexToBrush}}"
+                    CornerRadius="6" Padding="14">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <TextBlock Text="{Binding Body}"
                                TextWrapping="Wrap"
                                Foreground="{StaticResource TextPrimaryBrush}"
-                               FontSize="15"
-                               LineHeight="24" />
+                               FontSize="16"
+                               LineHeight="26" />
                 </ScrollViewer>
             </Border>
         </DockPanel>

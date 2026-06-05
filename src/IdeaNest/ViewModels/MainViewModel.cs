@@ -31,7 +31,7 @@ public class MainViewModel : ViewModelBase
     private string _selectedTag = string.Empty;
     private string _selectedColor = string.Empty;
     private bool _showArchived;
-    private bool _isTagPanelOpen = true;
+    private bool _isTagPanelOpen = false;
     private string _cardSize = "medium";
     private string _sortMode = "UpdatedDesc";
     private List<string> _shuffleOrder = new();
@@ -40,6 +40,7 @@ public class MainViewModel : ViewModelBase
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
     public ObservableCollection<string> AvailableTags { get; } = new();
     public ObservableCollection<TagItemViewModel> TagItems { get; } = new();
+
     public ObservableCollection<SortOptionViewModel> SortOptions { get; } = new()
     {
         new SortOptionViewModel("UpdatedDesc", "更新日時順"),
