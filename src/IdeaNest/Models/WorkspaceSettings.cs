@@ -17,7 +17,7 @@ public class WorkspaceSettings
     public bool ShowArchived { get; set; }
 
     [JsonPropertyName("tagPanelOpen")]
-    public bool TagPanelOpen { get; set; } = true;
+    public bool TagPanelOpen { get; set; } = false;
 
     [JsonPropertyName("cardSize")]
     public string CardSize { get; set; } = "medium";
