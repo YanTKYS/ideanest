@@ -103,6 +103,23 @@
                              ToolTip="タイトル・本文・タグを検索 (Ctrl+F)"
                              PreviewKeyDown="OnSearchBoxPreviewKeyDown"
                              Padding="10,6,30,6" />
+                    <TextBlock Text="タイトル・本文・タグを検索"
+                               IsHitTestVisible="False"
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="13">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <Button Content="✕"
                             Style="{StaticResource IconButtonStyle}"
                             Command="{Binding ClearSearchCommand}"
@@ -289,36 +306,13 @@
                     <TextBlock DockPanel.Dock="Top" Text="タグ"
                                Style="{StaticResource SectionHeaderStyle}"
                                Margin="6,4,0,8" />
-                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
-                        <TextBox x:Name="TagFilterBox"
-                                 Style="{StaticResource SearchTextBoxStyle}"
-                                 Text="{Binding TagFilterText, UpdateSourceTrigger=PropertyChanged}"
-                                 FontSize="12" />
-                        <TextBlock Text="タグを検索"
-                                   IsHitTestVisible="False"
-                                   VerticalAlignment="Center"
-                                   Margin="12,0,0,0"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   FontSize="12">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=TagFilterBox}" Value="">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Grid>
                     <Button DockPanel.Dock="Top" Content="(すべて)"
                             Command="{Binding ClearTagCommand}"
                             Style="{StaticResource IconButtonStyle}"
                             HorizontalContentAlignment="Left"
                             HorizontalAlignment="Stretch"
                             Padding="8,6" Margin="0,0,0,4" />
-                    <ListBox ItemsSource="{Binding FilteredTagItems}"
+                    <ListBox ItemsSource="{Binding TagItems}"
                              SelectedValue="{Binding SelectedTag, Mode=TwoWay}"
                              SelectedValuePath="Name"
                              BorderThickness="0" Background="Transparent"
