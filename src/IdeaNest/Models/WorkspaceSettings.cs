@@ -22,6 +22,9 @@ public class WorkspaceSettings
     [JsonPropertyName("cardSize")]
     public string CardSize { get; set; } = "medium";
 
+    [JsonPropertyName("cardHeightMode")]
+    public string CardHeightMode { get; set; } = "fixed";
+
     [JsonPropertyName("sortMode")]
     public string SortMode { get; set; } = "UpdatedDesc";
 

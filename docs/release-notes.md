@@ -1,5 +1,33 @@
 # リリースノート
 
+## v0.7.2 (カード高さモードの追加) — 2026-06-06
+
+カードサイズ (S / M / L) に加えて、カード高さの表示モードを切り替えられるようにしました。
+従来の「整然と並べたい」用途と、「本文量を把握したい」用途を両立させるための調整です。
+
+### 変更内容
+
+- **カード高さモード切替を追加** (`表示 → カード高さ`)
+  - `固定` (既定): 従来どおり S/M/L ごとの固定高さで一覧表示
+  - `本文に合わせる`: 本文量に応じてカード高さを可変にする。S/M/L ごとに最小高さ・最大高さを設定
+    - S: 110 〜 200 / M: 140 〜 280 / L: 180 〜 380
+  - 最大高さを超える本文は一覧上では省略表示 (`ClipToBounds`)。全文はカード詳細プレビューまたは編集ダイアログで確認できる
+- **カード幅は S / M / L の現在仕様を維持**
+  - 高さモードを切り替えても幅は変わらない
+- **設定の保存・復元**
+  - 選択中の高さモードは `.ideanest` の `settings.cardHeightMode` (string: `"fixed"` / `"auto"`) に保存される
+  - 既存ファイルに項目がない場合は `"fixed"` を既定として扱う (従来互換)
+
+### 影響範囲
+
+- `WorkspaceSettings.CardHeightMode` を追加 (既定 `"fixed"`)
+- `MainViewModel` に `CardHeightMode` / `CardMinHeight` / `CardMaxHeight` / `SetCardHeightModeCommand` を追加。`CardHeight` は `"auto"` 時に `double.NaN` を返す
+- `MainWindow.xaml` のカード Border に `MinHeight` / `MaxHeight` バインディングを追加し、`表示` メニュー配下にサブメニュー `カード高さ` を追加
+- `IdeaNest.csproj` の `<Version>` を `0.7.1` → `0.7.2` に更新 (タイトルバーが `ver0.7.2` 表記になる)
+- `.ideanest` ファイル形式 (`settings.cardHeightMode` を追加)・`AppSettings` (`settings.json`) には変更なし
+
+---
+
 ## v0.7.1 (タグパネル・プレビュー画面の実機調整) — 2026-06-04
 
 実機確認で気になった UI 表示・操作感を調整しました。

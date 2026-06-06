@@ -69,6 +69,14 @@
                               IsChecked="{Binding IsCardSizeLarge, Mode=OneWay}"
                               Command="{Binding SetCardSizeCommand}" CommandParameter="large" />
                 </MenuItem>
+                <MenuItem Header="カード高さ(_H)">
+                    <MenuItem Header="固定" IsCheckable="True"
+                              IsChecked="{Binding IsCardHeightFixed, Mode=OneWay}"
+                              Command="{Binding SetCardHeightModeCommand}" CommandParameter="fixed" />
+                    <MenuItem Header="本文に合わせる" IsCheckable="True"
+                              IsChecked="{Binding IsCardHeightAuto, Mode=OneWay}"
+                              Command="{Binding SetCardHeightModeCommand}" CommandParameter="auto" />
+                </MenuItem>
             </MenuItem>
             <MenuItem Header="ヘルプ(_H)">
                 <MenuItem Header="チュートリアル(_T)" Click="OnTutorialClick" />
@@ -380,6 +388,8 @@
                                 <Border Style="{StaticResource CardContainerStyle}"
                                         Width="{Binding DataContext.CardWidth, RelativeSource={RelativeSource AncestorType=Window}}"
                                         Height="{Binding DataContext.CardHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        MinHeight="{Binding DataContext.CardMinHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        MaxHeight="{Binding DataContext.CardMaxHeight, RelativeSource={RelativeSource AncestorType=Window}}"
                                         ClipToBounds="True"
                                         Background="{Binding BackgroundBrush, Converter={StaticResource HexToBrush}}"
                                         MouseLeftButtonUp="OnCardMouseLeftButtonUp">

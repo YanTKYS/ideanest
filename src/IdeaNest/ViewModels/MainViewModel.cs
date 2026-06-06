@@ -33,6 +33,7 @@ public class MainViewModel : ViewModelBase
     private bool _showArchived;
     private bool _isTagPanelOpen = false;
     private string _cardSize = "medium";
+    private string _cardHeightMode = "fixed";
     private string _sortMode = "UpdatedDesc";
     private List<string> _shuffleOrder = new();
 
@@ -207,6 +208,8 @@ public class MainViewModel : ViewModelBase
                 _workspace.Settings.CardSize = v;
                 OnPropertyChanged(nameof(CardWidth));
                 OnPropertyChanged(nameof(CardHeight));
+                OnPropertyChanged(nameof(CardMinHeight));
+                OnPropertyChanged(nameof(CardMaxHeight));
                 MarkDirty();
             }
             // Notify flags unconditionally so that re-clicking the current menu item
@@ -217,12 +220,47 @@ public class MainViewModel : ViewModelBase
         }
     }
 
+    public string CardHeightMode
+    {
+        get => _cardHeightMode;
+        set
+        {
+            var v = value switch { "auto" => "auto", _ => "fixed" };
+            if (SetField(ref _cardHeightMode, v))
+            {
+                _workspace.Settings.CardHeightMode = v;
+                OnPropertyChanged(nameof(CardHeight));
+                OnPropertyChanged(nameof(CardMinHeight));
+                OnPropertyChanged(nameof(CardMaxHeight));
+                MarkDirty();
+            }
+            OnPropertyChanged(nameof(IsCardHeightFixed));
+            OnPropertyChanged(nameof(IsCardHeightAuto));
+        }
+    }
+
     public double CardWidth  => _cardSize switch { "small" => 184, "large" => 340, _ => 252 };
-    public double CardHeight => _cardSize switch { "small" => 148, "large" => 280, _ => 212 };
+
+    // Auto height returns double.NaN so the Border sizes to its content
+    // (capped by CardMinHeight / CardMaxHeight).
+    public double CardHeight => _cardHeightMode == "auto"
+        ? double.NaN
+        : _cardSize switch { "small" => 148, "large" => 280, _ => 212 };
+
+    public double CardMinHeight => _cardHeightMode == "auto"
+        ? (_cardSize switch { "small" => 110, "large" => 180, _ => 140 })
+        : 0;
+
+    public double CardMaxHeight => _cardHeightMode == "auto"
+        ? (_cardSize switch { "small" => 200, "large" => 380, _ => 280 })
+        : double.PositiveInfinity;
 
     public bool IsCardSizeSmall  => _cardSize == "small";
     public bool IsCardSizeMedium => _cardSize == "medium";
     public bool IsCardSizeLarge  => _cardSize == "large";
+
+    public bool IsCardHeightFixed => _cardHeightMode == "fixed";
+    public bool IsCardHeightAuto  => _cardHeightMode == "auto";
 
     public string SortMode
     {
@@ -274,6 +312,7 @@ public class MainViewModel : ViewModelBase
     public ICommand CopyNoteNestCommand { get; }
     public ICommand ToggleTagPanelCommand { get; }
     public ICommand SetCardSizeCommand { get; }
+    public ICommand SetCardHeightModeCommand { get; }
     public ICommand ReshuffleCommand { get; }
 
     public string StatusMessage
@@ -355,6 +394,7 @@ public class MainViewModel : ViewModelBase
         CopyNoteNestCommand       = new RelayCommand(_ => CopyNoteNest());
         ToggleTagPanelCommand     = new RelayCommand(_ => IsTagPanelOpen = !IsTagPanelOpen);
         SetCardSizeCommand        = new RelayCommand(p => CardSize = p as string ?? "medium");
+        SetCardHeightModeCommand  = new RelayCommand(p => CardHeightMode = p as string ?? "fixed");
         ReshuffleCommand          = new RelayCommand(_ => Reshuffle());
     }
 
@@ -493,6 +533,7 @@ public class MainViewModel : ViewModelBase
         _workspace.Settings.SelectedColor = SelectedColor;
         _workspace.Settings.ShowArchived = ShowArchived;
         _workspace.Settings.CardSize = _cardSize;
+        _workspace.Settings.CardHeightMode = _cardHeightMode;
         _workspace.Settings.SortMode = _sortMode;
     }
 
@@ -714,6 +755,7 @@ public class MainViewModel : ViewModelBase
         _showArchived = _workspace.Settings.ShowArchived;
         _isTagPanelOpen = _workspace.Settings.TagPanelOpen;
         _cardSize = _workspace.Settings.CardSize switch { "small" => "small", "large" => "large", _ => "medium" };
+        _cardHeightMode = _workspace.Settings.CardHeightMode switch { "auto" => "auto", _ => "fixed" };
         _sortMode = _workspace.Settings.SortMode switch
         {
             "CreatedDesc" => "CreatedDesc",
@@ -732,9 +774,14 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(CardSize));
         OnPropertyChanged(nameof(CardWidth));
         OnPropertyChanged(nameof(CardHeight));
+        OnPropertyChanged(nameof(CardMinHeight));
+        OnPropertyChanged(nameof(CardMaxHeight));
         OnPropertyChanged(nameof(IsCardSizeSmall));
         OnPropertyChanged(nameof(IsCardSizeMedium));
         OnPropertyChanged(nameof(IsCardSizeLarge));
+        OnPropertyChanged(nameof(CardHeightMode));
+        OnPropertyChanged(nameof(IsCardHeightFixed));
+        OnPropertyChanged(nameof(IsCardHeightAuto));
         OnPropertyChanged(nameof(SortMode));
         OnPropertyChanged(nameof(IsShuffleMode));
         RefreshTags();
