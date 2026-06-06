@@ -390,6 +390,7 @@
                                         Height="{Binding DataContext.CardHeight, RelativeSource={RelativeSource AncestorType=Window}}"
                                         MinHeight="{Binding DataContext.CardMinHeight, RelativeSource={RelativeSource AncestorType=Window}}"
                                         MaxHeight="{Binding DataContext.CardMaxHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        VerticalAlignment="Top"
                                         ClipToBounds="True"
                                         Background="{Binding BackgroundBrush, Converter={StaticResource HexToBrush}}"
                                         MouseLeftButtonUp="OnCardMouseLeftButtonUp">

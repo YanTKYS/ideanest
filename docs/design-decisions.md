@@ -364,6 +364,19 @@ v0.2.0 でのタグ正規化は「前後空白除去」「先頭 `#` 除去」�
 - Masonry レイアウトやカードごとの個別サイズ指定は今回見送り。
   WPF の `WrapPanel` で素直に表現でき、追加の依存も発生しない範囲に留めた。
 
+## なぜ高さ可変カードに `VerticalAlignment="Top"` を明示したか (v0.7.3)
+
+- WPF の `WrapPanel`(Horizontal) は各行の行高さを「その行の最大子要素 DesiredSize.Height」に揃えたうえで、
+  子要素の `VerticalAlignment` に従って Arrange する。Border の既定 `VerticalAlignment` は `Stretch` のため、
+  v0.7.2 の「本文に合わせる」モードでは短文カードでも行内の長文カードと同じ高さまで自動で引き伸ばされていた。
+- これは Auto モードの「本文量に応じてカードごとに高さが変わる」という意図に反するため、
+  カード Border に `VerticalAlignment="Top"` を明示して、自身が要求した DesiredSize を保つよう修正した。
+- 固定モードでは Border に明示的な `Height` が与えられており、`VerticalAlignment` の値はサイズ決定に
+  影響しないため、固定モードの見た目には変化がない。
+- 完全な Masonry (短文カードの直下に次行のカードを詰めて配置する) は引き続きスコープ外とし、
+  行内の高さばらつきだけを許容する形に留める。完全な Masonry が必要になった場合は
+  カスタム `Panel` の実装が要るため、backlog で別途検討する。
+
 ## なぜ NoteNest とは別ツールにしたか
 
 - 同じアプリの中に「腰を据えて書く画面」と「雑に溜める画面」を同居させると、
