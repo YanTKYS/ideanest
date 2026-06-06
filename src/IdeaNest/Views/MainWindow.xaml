@@ -494,12 +494,40 @@
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
 
-                                        <!-- Body preview -->
+                                        <!-- Body preview (fixed mode) -->
                                         <TextBlock Text="{Binding BodyPreview}"
                                                    TextWrapping="Wrap" Margin="0,2,0,4"
                                                    FontSize="12"
                                                    Foreground="{StaticResource TextPrimaryBrush}"
-                                                   Opacity="0.85" />
+                                                   Opacity="0.85">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.IsCardHeightAuto, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <!-- Body full text (auto height mode) -->
+                                        <TextBlock Text="{Binding Body}"
+                                                   TextWrapping="Wrap" Margin="0,2,0,4"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   Opacity="0.85">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.IsCardHeightAuto, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                     </DockPanel>
                                 </Border>
                             </DataTemplate>
