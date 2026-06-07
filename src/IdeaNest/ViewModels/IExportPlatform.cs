@@ -4,7 +4,7 @@ namespace IdeaNest.ViewModels;
 
 /// <summary>
 /// WPF-dependent UI hooks that ExportViewModel relies on (file dialog, options
-/// dialog, clipboard, message boxes). Implemented by MainViewModel using WPF
+/// dialog, clipboard, message boxes). Implemented by WpfExportPlatform using WPF
 /// types; mocked in tests so ExportViewModel itself stays cross-platform.
 /// </summary>
 public interface IExportPlatform
