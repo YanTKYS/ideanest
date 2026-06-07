@@ -352,9 +352,8 @@ public class MainViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            // _autoSaveFailed is auto-save-only. Manual save failure is surfaced via
-            // MessageBox only; SaveStatusText is unchanged on manual save failure.
-            OnPropertyChanged(nameof(SaveStatusText));
+            // Manual save failure is surfaced via MessageBox only.
+            // SaveStatusText is unchanged (IsDirty stays true, SaveState is unmodified).
             MessageBox.Show($"保存に失敗しました:\n{ex.Message}", "IdeaNest", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
