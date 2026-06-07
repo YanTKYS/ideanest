@@ -248,7 +248,7 @@ public class MainViewModel : ViewModelBase
         CardDisplay = new CardDisplayViewModel(RefreshVisible, MarkDirty);
         CardDisplay.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
-        Filter = new FilterViewModel(RefreshVisible, MarkDirty);
+        Filter = new FilterViewModel(RefreshVisible, OnFilterChanged);
         // Relay all Filter property-change notifications (SearchText, SelectedTag,
         // SelectedColor, ShowArchived, HasActiveFilter) so existing XAML bindings work.
         Filter.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
@@ -545,6 +545,19 @@ public class MainViewModel : ViewModelBase
     {
         IsDirty = true;
         ScheduleAutoSave();
+    }
+
+    /// <summary>
+    /// Filter-state change interceptor. Writes the latest filter values into
+    /// _workspace.Settings before marking dirty, so that callers observing
+    /// <see cref="Settings"/> see the current state immediately (not only after
+    /// the next save). This preserves the pre-v0.8.2 behavior where each
+    /// MainViewModel filter setter wrote through to Settings synchronously.
+    /// </summary>
+    private void OnFilterChanged()
+    {
+        Filter.SyncToSettings(_workspace.Settings);
+        MarkDirty();
     }
 
     private void ScheduleAutoSave()

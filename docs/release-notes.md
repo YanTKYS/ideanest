@@ -24,13 +24,19 @@ v0.8.1 と同様、XAML・保存形式・既存コマンドは変更なし。
     薄い転送プロパティを残し、`Filter.PropertyChanged` を再発火
   - `SyncWindowSizeBeforeSave`: 個別代入を `Filter.SyncToSettings()` に集約
   - `ReloadFromWorkspace`: 個別フィールド代入を `Filter.LoadFromSettings()` に集約
+  - フィルタ変更時の Settings 同期: `Filter` の `onMarkDirty` には
+    `OnFilterChanged()` を渡し、`MarkDirty()` の直前に
+    `Filter.SyncToSettings(_workspace.Settings)` を実行する。
+    これにより、抽出前と同様に `MainViewModel.Settings.SearchText` 等が
+    保存を待たずに即時最新値を反映する (公開プロパティの観測可能な振る舞いを維持)
 
 - **`IdeaNest.Tests.csproj`** に `FilterViewModel.cs` の `<Compile Include>` を追加
-- **新規テスト 32 件** (`FilterViewModelTests.cs`):
+- **新規テスト 34 件** (`FilterViewModelTests.cs`):
   デフォルト値、SearchText / SelectedTag / SelectedColor / ShowArchived の
   変更・同値・null 代入・コールバック発火、HasActiveFilter の各ケース
   (空白のみは inactive、ShowArchived は影響しない)、ClearFilter の動作、
-  PropertyChanged 通知、SyncToSettings / LoadFromSettings のラウンドトリップ
+  PropertyChanged 通知、SyncToSettings / LoadFromSettings のラウンドトリップ、
+  `onMarkDirty` 発火時には既に最新値が観測可能であるという順序契約
 
 ### 影響範囲
 
