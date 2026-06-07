@@ -22,7 +22,7 @@
 4. **一度に 1 〜 2 責務を切り出す** — 大規模リファクタリングは避け、
    既存テストが全件グリーンであることを確認しながら進める。
 
-### 分割済み (v0.8.1 〜 v0.8.6)
+### 分割済み (v0.8.1 〜 v0.8.8)
 
 | サブ ViewModel / Service | 担当 | 状態 |
 | --- | --- | --- |
@@ -32,6 +32,7 @@
 | `ExportViewModel` + `IExportPlatform` | Markdown / NoteNest エクスポート、クリップボードコピー (各 5 メソッド) | ✅ 完了 (v0.8.4) |
 | `RecentFilesService` + `StartupCoordinator` + `StartupViewModel` | 最近使ったファイル一覧の純粋ロジック / 起動引数解決 / スタートダイアログ状態 | ✅ 完了 (v0.8.5) |
 | `SaveStateViewModel` | ファイルパス / dirty フラグ / 自動保存スケジューリング判定 / 保存ステータス文言 | ✅ 完了 (v0.8.6) |
+| `CardOperationsService` + `TagSyncService` | カード追加・編集・削除・ピン留め・アーカイブ / タグ集計 | ✅ 完了 (v0.8.8) |
 
 ### 今後の候補 (backlog M12 で継続)
 
@@ -54,6 +55,28 @@
   `SaveFileDialog` のフィルタ文字列・既定拡張子といった UI 詳細を MainViewModel から退避。
   これらの WPF 詳細は今後 UI を別 OS に移植する際の単一の隔離ポイントになる。
 - DI コンテナ導入は引き続き対象外。インスタンスは MainViewModel が `new` で生成する。
+
+### v0.8.8 でカード操作・タグ集計を 2 クラスに切り出した理由
+
+- v0.8.7 の回帰確認後、`MainViewModel` にはまだカード CRUD とタグ集計の 200 行ほどが残っていた。
+  これらはいずれも WPF に依存しない純粋なロジックで、これまでと同じ方針 (コールバック渡し) で
+  切り出せる対象だった。
+- `CardOperationsService` をインスタンスクラスにした理由は、コンストラクタで
+  `List<Idea>` / `ObservableCollection<IdeaCardViewModel>` / 3 つのコールバック /
+  `Func<DateTime>` を受け取ることで、テスト時に状態変化をすべて外から観察できるから。
+  静的クラスにするとパラメータが長大になるか、テストごとの独立性が失われる。
+- `Func<DateTime>` を差し込んだのは `CommitAdd` のタイムスタンプを決定論的にテストするため。
+  `card.Touch()` (`CommitEdit` / `TogglePin` / `ToggleArchive`) は `DateTime.Now` のままとし、
+  テストでは「before ≤ card.UpdatedAt ≤ after」でバウンド検証する。
+- `_cardOps` は `ReloadFromWorkspace()` の先頭で再生成する。`_workspace` が差し替わる
+  (`NewWorkspace` / `Open` / `LoadStartup`) 経路はすべて `ReloadFromWorkspace` を経由するため、
+  `_workspace.Ideas` への参照が陳腐化しない。
+- `TagSyncService` を静的クラスにした理由は、状態を持たない純関数 (入力: カード一覧、出力: タグ一覧)
+  であり、インスタンスにすると依存が増えるだけで利点がないから。
+- `RefreshTags` が `MainViewModel` に残っている理由は、`AvailableTags` (ObservableCollection) と
+  `TagPanel.SetAllItems` の両方を更新する責務であり、どちらも WPF / ViewModel の状態に属するため。
+  集計ロジックだけを `TagSyncService` に移し、書き込み側は `MainViewModel` が担う分担とした。
+- DI コンテナは引き続き対象外。`_cardOps` は `CreateCardOps()` ヘルパーで `new` する。
 
 ### v0.8.6 で保存状態・自動保存まわりを SaveStateViewModel に切り出した理由
 
