@@ -30,12 +30,15 @@
     <Compile Include="..\..\src\IdeaNest\Models\WorkspaceSettings.cs" Link="Models\WorkspaceSettings.cs" />
     <Compile Include="..\..\src\IdeaNest\Services\MarkdownExportService.cs" Link="Services\MarkdownExportService.cs" />
     <Compile Include="..\..\src\IdeaNest\Services\NoteNestExportService.cs" Link="Services\NoteNestExportService.cs" />
+    <Compile Include="..\..\src\IdeaNest\Services\RecentFilesService.cs" Link="Services\RecentFilesService.cs" />
+    <Compile Include="..\..\src\IdeaNest\Services\StartupCoordinator.cs" Link="Services\StartupCoordinator.cs" />
     <Compile Include="..\..\src\IdeaNest\Services\WorkspaceService.cs" Link="Services\WorkspaceService.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\CardDisplayViewModel.cs" Link="ViewModels\CardDisplayViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\ExportViewModel.cs" Link="ViewModels\ExportViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\FilterViewModel.cs" Link="ViewModels\FilterViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\IExportPlatform.cs" Link="ViewModels\IExportPlatform.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\IdeaCardViewModel.cs" Link="ViewModels\IdeaCardViewModel.cs" />
+    <Compile Include="..\..\src\IdeaNest\ViewModels\StartupViewModel.cs" Link="ViewModels\StartupViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\TagItemViewModel.cs" Link="ViewModels\TagItemViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\TagPanelViewModel.cs" Link="ViewModels\TagPanelViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\ViewModelBase.cs" Link="ViewModels\ViewModelBase.cs" />

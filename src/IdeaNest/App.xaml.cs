@@ -1,7 +1,7 @@
 using System;
-using System.IO;
 using System.Windows;
 using IdeaNest.Services;
+using IdeaNest.ViewModels;
 using IdeaNest.Views;
 
 namespace IdeaNest;
@@ -12,15 +12,10 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        if (!TryResolveInitialPath(e.Args, out var initialPath, out var openedFromArg))
+        if (!TryResolveInitialPath(e.Args, out var initialPath))
         {
             Shutdown();
             return;
-        }
-
-        if (!string.IsNullOrEmpty(initialPath) && openedFromArg)
-        {
-            AppSettingsService.AddRecentFile(initialPath);
         }
 
         var main = new MainWindow(initialPath);
@@ -29,55 +24,59 @@ public partial class App : Application
         main.Show();
     }
 
-    private static bool TryResolveInitialPath(string[] args, out string? path, out bool openedFromArg)
+    private static bool TryResolveInitialPath(string[] args, out string? path)
     {
-        openedFromArg = false;
+        var action = StartupCoordinator.Resolve(args);
 
-        if (args.Length > 0 && File.Exists(args[0]))
+        if (action.Kind == StartupActionKind.DirectOpen)
         {
-            path = args[0];
-            try
+            path = action.Path;
+            // Only add to history when the file actually parses — a corrupt
+            // file should not get a privileged slot in recent files. The
+            // workspace itself is re-loaded inside MainViewModel.LoadStartup,
+            // which surfaces any parse error through its own MessageBox.
+            if (!string.IsNullOrEmpty(path) && IsValidWorkspace(path))
             {
-                // Validate content; result discarded. LoadStartup re-loads it.
-                // Only mark openedFromArg if the file is actually parseable so that
-                // corrupt files are not added to the recent-files list.
-                WorkspaceService.Load(args[0]);
-                openedFromArg = true;
-            }
-            catch
-            {
-                // Invalid content — LoadStartup will surface the error; skip recent.
+                AppSettingsService.AddRecentFile(path);
             }
             return true;
         }
 
+        return TryRunStartupDialog(out path);
+    }
+
+    private static bool TryRunStartupDialog(out string? path)
+    {
         while (true)
         {
             var settings = AppSettingsService.Load();
-            var dlg = new StartupWindow(settings.RecentFiles);
-            if (dlg.ShowDialog() != true)
+            var vm = new StartupViewModel(settings.RecentFiles);
+            var dlg = new StartupWindow(vm);
+            var dialogResult = dlg.ShowDialog();
+
+            if (dialogResult != true || vm.Choice == StartupChoice.Cancel)
             {
                 path = null;
                 return false;
             }
 
-            if (dlg.ChoseNew)
+            if (vm.Choice == StartupChoice.New)
             {
                 path = null;
                 return true;
             }
 
-            var picked = dlg.SelectedPath;
+            // Choice == Open
+            var picked = vm.SelectedPath;
             if (string.IsNullOrEmpty(picked))
             {
-                // Open clicked with no selection — show dialog again.
                 continue;
             }
 
             try
             {
-                // Validate by attempting to parse; the workspace itself is reloaded
-                // inside MainViewModel.LoadStartup so the result here is discarded.
+                // Validate by parsing; the workspace itself is re-loaded inside
+                // MainViewModel.LoadStartup so the result here is discarded.
                 WorkspaceService.Load(picked);
             }
             catch (Exception ex)
@@ -93,6 +92,19 @@ public partial class App : Application
             AppSettingsService.AddRecentFile(picked);
             path = picked;
             return true;
+        }
+    }
+
+    private static bool IsValidWorkspace(string path)
+    {
+        try
+        {
+            WorkspaceService.Load(path);
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 }
