@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using IdeaNest.ViewModels;
 using Xunit;
 
@@ -8,6 +10,13 @@ public class SaveStateViewModelTests
 {
     private static SaveStateViewModel Make(Func<DateTime>? clock = null)
         => new(clock);
+
+    private static List<string?> CapturePropertyChanges(INotifyPropertyChanged source)
+    {
+        var changes = new List<string?>();
+        source.PropertyChanged += (_, e) => changes.Add(e.PropertyName);
+        return changes;
+    }
 
     // ── Initial state ─────────────────────────────────────────────────────────
 
@@ -306,5 +315,101 @@ public class SaveStateViewModelTests
         vm.MarkDirty();
         vm.Reset();
         Assert.False(vm.IsDirty);
+    }
+
+    // ── CanScheduleAutoSave change notifications ─────────────────────────────
+
+    [Fact]
+    public void OnFileLoaded_RaisesPropertyChanged_For_CanScheduleAutoSave()
+    {
+        var vm = Make();
+        var changes = CapturePropertyChanges(vm);
+
+        vm.OnFileLoaded(@"C:\notes\ideas.ideanest");
+
+        Assert.Contains(nameof(SaveStateViewModel.CanScheduleAutoSave), changes);
+    }
+
+    [Fact]
+    public void OnManualSaveSuccess_FromNoPath_RaisesPropertyChanged_For_CanScheduleAutoSave()
+    {
+        var vm = Make();
+        var changes = CapturePropertyChanges(vm);
+
+        vm.OnManualSaveSuccess(@"C:\notes\ideas.ideanest");
+
+        // Path went from null → set → CanScheduleAutoSave flipped false → true.
+        Assert.Contains(nameof(SaveStateViewModel.CanScheduleAutoSave), changes);
+    }
+
+    [Fact]
+    public void Reset_FromLoadedFile_RaisesPropertyChanged_For_CanScheduleAutoSave()
+    {
+        var vm = Make();
+        vm.OnFileLoaded(@"C:\notes\ideas.ideanest");
+        var changes = CapturePropertyChanges(vm);
+
+        vm.Reset();
+
+        // Path went set → null → CanScheduleAutoSave flipped true → false.
+        Assert.Contains(nameof(SaveStateViewModel.CanScheduleAutoSave), changes);
+    }
+
+    [Fact]
+    public void OnAutoSaveBegin_RaisesPropertyChanged_For_CanScheduleAutoSave()
+    {
+        var vm = Make();
+        vm.OnFileLoaded(@"C:\notes\ideas.ideanest");
+        vm.MarkDirty();
+        var changes = CapturePropertyChanges(vm);
+
+        vm.OnAutoSaveBegin();
+
+        // _isAutoSaving flipped false → true → CanScheduleAutoSave flipped true → false.
+        Assert.Contains(nameof(SaveStateViewModel.CanScheduleAutoSave), changes);
+    }
+
+    [Fact]
+    public void OnAutoSaveSuccess_RaisesPropertyChanged_For_CanScheduleAutoSave()
+    {
+        var vm = Make(() => DateTime.Now);
+        vm.OnFileLoaded(@"C:\notes\ideas.ideanest");
+        vm.MarkDirty();
+        vm.OnAutoSaveBegin();
+        var changes = CapturePropertyChanges(vm);
+
+        vm.OnAutoSaveSuccess();
+
+        // _isAutoSaving flipped true → false → CanScheduleAutoSave flipped false → true.
+        Assert.Contains(nameof(SaveStateViewModel.CanScheduleAutoSave), changes);
+    }
+
+    [Fact]
+    public void OnAutoSaveFail_RaisesPropertyChanged_For_CanScheduleAutoSave()
+    {
+        var vm = Make();
+        vm.OnFileLoaded(@"C:\notes\ideas.ideanest");
+        vm.MarkDirty();
+        vm.OnAutoSaveBegin();
+        var changes = CapturePropertyChanges(vm);
+
+        vm.OnAutoSaveFail();
+
+        // _isAutoSaving flipped true → false → CanScheduleAutoSave flipped false → true.
+        Assert.Contains(nameof(SaveStateViewModel.CanScheduleAutoSave), changes);
+    }
+
+    [Fact]
+    public void MarkDirty_DoesNotRaisePropertyChanged_For_CanScheduleAutoSave()
+    {
+        // MarkDirty changes IsDirty, but IsDirty is not part of CanScheduleAutoSave's
+        // formula — so the dependency-tracking notification should not fire.
+        var vm = Make();
+        vm.OnFileLoaded(@"C:\notes\ideas.ideanest");
+        var changes = CapturePropertyChanges(vm);
+
+        vm.MarkDirty();
+
+        Assert.DoesNotContain(nameof(SaveStateViewModel.CanScheduleAutoSave), changes);
     }
 }
