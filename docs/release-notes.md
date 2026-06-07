@@ -1,5 +1,46 @@
 # リリースノート
 
+## v0.8.8 (カード操作・タグ集計の分割) — 2026-06-07
+
+### 変更概要
+
+`MainViewModel` に残っていたカード操作ロジック (追加・編集・削除・ピン留め・アーカイブ) と
+タグ集計ロジックを、WPF 非依存の小さなクラスに切り出しました。
+UI 挙動・保存形式・XAML バインディングに変更はありません。
+
+### 新規クラス
+
+| クラス | 責務 |
+| --- | --- |
+| `CardOperationsService` | カードの追加・編集・削除・ピン留め切替・アーカイブ切替。タイムスタンプ設定・空ドラフト除外・自動タイトル生成を含む。コールバック (onDirty / onRefreshTags / onRefreshVisible) 経由で後続処理を委譲 |
+| `TagSyncService` | 全カードのタグを集計して `TagItemViewModel` のリスト (アルファベット順・件数付き) を返す静的メソッド |
+
+### MainViewModel の変更
+
+- `AddIdea` / `EditIdea` / `DeleteIdea` / `TogglePin` / `ToggleArchive` の
+  ポスト確認ロジックを `CardOperationsService` に委譲
+- `RefreshTags` の集計処理を `TagSyncService.ComputeTagItems` に委譲
+- `CreateCardOps()` ヘルパーで `_cardOps` インスタンスを生成。
+  ワークスペース入れ替え時 (`ReloadFromWorkspace`) に `_cardOps` を再生成し、
+  `_workspace.Ideas` への参照を最新に保つ
+
+### テスト追加 (284件、+21件)
+
+- `CardOperationsServiceTests` — 15件
+  - CommitAdd: 空ドラフト除外 / タイムスタンプ注入 / 自動タイトル生成・40文字切り捨て / コールバック検証
+  - CommitEdit: UpdatedAt 更新 / コールバック検証
+  - CommitDelete: 両コレクションからの除去 / コールバック検証
+  - TogglePin / ToggleArchive: フラグ切替 / onRefreshTags が呼ばれないことの検証
+- `TagSyncServiceTests` — 6件
+  - 空集合 / 単一タグ / 複数カードの集計 / アルファベット順ソート / 空白タグ除外 / 大文字小文字区別
+
+### 変更なし
+
+- 保存ファイル形式 (`.ideanest`) / XAML / メニュー構成 /
+  キーボードショートカット / 自動保存挙動 / エクスポート出力形式 — **すべて変更なし**
+
+---
+
 ## v0.8.7 (リファクタ後回帰確認・小修正) — 2026-06-07
 
 v0.8.1〜v0.8.6 の MainViewModel 段階的分割を受けて、**新機能の追加や大規模な設計変更は行わず**、

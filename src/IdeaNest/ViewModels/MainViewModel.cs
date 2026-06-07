@@ -18,6 +18,7 @@ namespace IdeaNest.ViewModels;
 public class MainViewModel : ViewModelBase
 {
     private Workspace _workspace = new();
+    private CardOperationsService _cardOps = null!; // assigned in constructor, re-created by ReloadFromWorkspace
     private DispatcherTimer? _autoSaveTimer;
     private DispatcherTimer? _statusClearTimer;
     private string _statusMessage = string.Empty;
@@ -272,7 +273,16 @@ public class MainViewModel : ViewModelBase
         SetCardHeightModeCommand  = new RelayCommand(p => CardDisplay.CardHeightMode = p as string ?? "fixed");
         ReshuffleCommand          = new RelayCommand(_ =>
             CardDisplay.Reshuffle(AllCards.Where(c => !c.IsPinned).Select(c => c.Id)));
+
+        _cardOps = CreateCardOps();
     }
+
+    private CardOperationsService CreateCardOps() => new(
+        _workspace.Ideas,
+        AllCards,
+        MarkDirty,
+        RefreshTags,
+        RefreshVisible);
 
     private void RaiseCountAndEmptyStateChanged()
     {
@@ -403,30 +413,7 @@ public class MainViewModel : ViewModelBase
         if (dlg.ShowDialog() != true) return;
 
         vm.ApplyTo(draft);
-
-        var title = draft.Title?.Trim() ?? string.Empty;
-        var body  = draft.Body?.Trim()  ?? string.Empty;
-        if (string.IsNullOrEmpty(title) && string.IsNullOrEmpty(body))
-        {
-            // タイトル・本文が両方空のカードは保存しない (空入力 → キャンセル相当)
-            return;
-        }
-
-        if (string.IsNullOrEmpty(title))
-        {
-            var firstLine = body.Split('\n').FirstOrDefault()?.Trim() ?? string.Empty;
-            draft.Title = firstLine.Length > 40 ? firstLine[..40] : firstLine;
-        }
-
-        var now = DateTime.Now;
-        draft.CreatedAt = now;
-        draft.UpdatedAt = now;
-
-        _workspace.Ideas.Add(draft);
-        AllCards.Add(new IdeaCardViewModel(draft));
-        MarkDirty();
-        RefreshTags();
-        RefreshVisible();
+        _cardOps.CommitAdd(draft);
     }
 
     private void PreviewIdea(IdeaCardViewModel? card)
@@ -471,16 +458,9 @@ public class MainViewModel : ViewModelBase
             DataContext = vm,
             Owner = owner ?? Application.Current?.MainWindow,
         };
-        var result = dlg.ShowDialog();
-        if (result == true)
-        {
-            vm.ApplyTo(card.Model);
-            card.Touch();
-            card.OnExternalUpdate();
-            MarkDirty();
-            RefreshTags();
-            RefreshVisible();
-        }
+        if (dlg.ShowDialog() != true) return;
+        vm.ApplyTo(card.Model);
+        _cardOps.CommitEdit(card);
     }
 
     private void DeleteIdea(IdeaCardViewModel? card)
@@ -494,29 +474,19 @@ public class MainViewModel : ViewModelBase
             primaryText: "削除",
             cancelText: "キャンセル");
         if (ok != ConfirmResult.Primary) return;
-        _workspace.Ideas.Remove(card.Model);
-        AllCards.Remove(card);
-        MarkDirty();
-        RefreshTags();
-        RefreshVisible();
+        _cardOps.CommitDelete(card);
     }
 
     private void TogglePin(IdeaCardViewModel? card)
     {
         if (card == null) return;
-        card.IsPinned = !card.IsPinned;
-        card.Touch();
-        MarkDirty();
-        RefreshVisible();
+        _cardOps.TogglePin(card);
     }
 
     private void ToggleArchive(IdeaCardViewModel? card)
     {
         if (card == null) return;
-        card.IsArchived = !card.IsArchived;
-        card.Touch();
-        MarkDirty();
-        RefreshVisible();
+        _cardOps.ToggleArchive(card);
     }
 
     public void MarkDirty()
@@ -587,6 +557,7 @@ public class MainViewModel : ViewModelBase
 
     private void ReloadFromWorkspace()
     {
+        _cardOps = CreateCardOps();
         AllCards.Clear();
         foreach (var idea in _workspace.Ideas)
         {
@@ -604,21 +575,9 @@ public class MainViewModel : ViewModelBase
 
     private void RefreshTags()
     {
-        var tagCounts = AllCards
-            .SelectMany(c => c.Tags)
-            .Where(t => !string.IsNullOrWhiteSpace(t))
-            .GroupBy(t => t, StringComparer.Ordinal)
-            .OrderBy(g => g.Key, StringComparer.Ordinal)
-            .Select(g => (Name: g.Key, Count: g.Count()))
-            .ToList();
-
+        var tagItems = TagSyncService.ComputeTagItems(AllCards);
         AvailableTags.Clear();
-        var tagItems = new List<TagItemViewModel>(tagCounts.Count);
-        foreach (var (name, count) in tagCounts)
-        {
-            AvailableTags.Add(name);
-            tagItems.Add(new TagItemViewModel(name, count));
-        }
+        foreach (var item in tagItems) AvailableTags.Add(item.Name);
         TagPanel.SetAllItems(tagItems);
     }
 
