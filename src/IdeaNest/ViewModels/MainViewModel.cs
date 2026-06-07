@@ -228,7 +228,7 @@ public class MainViewModel : ViewModelBase
             }
         };
 
-        CardDisplay = new CardDisplayViewModel(RefreshVisible, MarkDirty);
+        CardDisplay = new CardDisplayViewModel(RefreshVisible, OnCardDisplayChanged);
         CardDisplay.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
         Filter = new FilterViewModel(RefreshVisible, OnFilterChanged);
@@ -353,7 +353,7 @@ public class MainViewModel : ViewModelBase
         catch (Exception ex)
         {
             // Manual save failure is surfaced via MessageBox only.
-            // SaveStatusText is unchanged (IsDirty stays true, SaveState is unmodified).
+            // SaveStatusText is unchanged because SaveState is left unmodified.
             MessageBox.Show($"保存に失敗しました:\n{ex.Message}", "IdeaNest", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
@@ -534,6 +534,12 @@ public class MainViewModel : ViewModelBase
     private void OnTagPanelChanged()
     {
         TagPanel.SyncToSettings(_workspace.Settings);
+        MarkDirty();
+    }
+
+    private void OnCardDisplayChanged()
+    {
+        CardDisplay.SyncToSettings(_workspace.Settings);
         MarkDirty();
     }
 
