@@ -266,6 +266,44 @@ public class TagPanelViewModelTests
         Assert.Empty(vm.VisibleItems);
     }
 
+    // ── AllItems (unfiltered, used by TagManagementWindow) ────────────────────
+
+    [Fact]
+    public void AllItems_AlwaysContainsEveryTag_RegardlessOfTagSearch()
+    {
+        // TagManagementWindow binds here; rename/delete must cover every tag
+        // even when the side panel is showing a filtered subset.
+        var vm = Make();
+        vm.TagSearch = "ui";
+        vm.SetAllItems(new[] { Item("UI"), Item("設計"), Item("開発") });
+
+        Assert.Equal(3, vm.AllItems.Count);
+        Assert.Single(vm.VisibleItems); // filtered view stays filtered
+    }
+
+    [Fact]
+    public void AllItems_StableReference_AcrossSetAllItemsCalls()
+    {
+        // The forwarding property MainViewModel.TagItems returns this collection
+        // once and never re-reads it, so the reference must not change.
+        var vm = Make();
+        var before = vm.AllItems;
+        vm.SetAllItems(new[] { Item("UI") });
+        vm.SetAllItems(new[] { Item("設計"), Item("開発") });
+        Assert.Same(before, vm.AllItems);
+        Assert.Equal(2, vm.AllItems.Count);
+    }
+
+    [Fact]
+    public void VisibleItems_StableReference_AcrossSetAllItemsCalls()
+    {
+        var vm = Make();
+        var before = vm.VisibleItems;
+        vm.SetAllItems(new[] { Item("UI") });
+        vm.SetAllItems(new[] { Item("設計") });
+        Assert.Same(before, vm.VisibleItems);
+    }
+
     // ── SelectTag ─────────────────────────────────────────────────────────────
 
     [Fact]
@@ -374,6 +412,52 @@ public class TagPanelViewModelTests
         vm.LoadFromSettings(new WorkspaceSettings { TagPanelOpen = true });
 
         Assert.Equal(0, dirty);
+    }
+
+    [Fact]
+    public void LoadFromSettings_ClearsTagSearch_ForWorkspaceSwitch()
+    {
+        // TagSearch is workspace-scoped session state. Opening a different
+        // .ideanest must not leave the previous workspace's filter in place,
+        // otherwise tags from the new workspace would be partially hidden
+        // (and TagManagementWindow's AllItems-backed list is unaffected, but
+        //  the side panel would still hide entries from the new tag set).
+        var vm = Make();
+        vm.TagSearch = "ui";
+
+        vm.LoadFromSettings(new WorkspaceSettings { TagPanelOpen = true });
+
+        Assert.Equal(string.Empty, vm.TagSearch);
+        Assert.False(vm.HasTagSearch);
+    }
+
+    [Fact]
+    public void LoadFromSettings_FiresPropertyChangedForTagSearch_WhenItChanged()
+    {
+        var vm = Make();
+        vm.TagSearch = "ui";
+        var fired = new List<string>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName ?? "");
+
+        vm.LoadFromSettings(new WorkspaceSettings { TagPanelOpen = true });
+
+        Assert.Contains(nameof(TagPanelViewModel.TagSearch), fired);
+        Assert.Contains(nameof(TagPanelViewModel.HasTagSearch), fired);
+    }
+
+    [Fact]
+    public void LoadFromSettings_DoesNotFireTagSearchPropertyChanged_WhenAlreadyEmpty()
+    {
+        // When TagSearch is already empty, LoadFromSettings should not raise
+        // a spurious PropertyChanged for it.
+        var vm = Make();
+        var fired = new List<string>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName ?? "");
+
+        vm.LoadFromSettings(new WorkspaceSettings { TagPanelOpen = true });
+
+        Assert.DoesNotContain(nameof(TagPanelViewModel.TagSearch), fired);
+        Assert.DoesNotContain(nameof(TagPanelViewModel.HasTagSearch), fired);
     }
 
     // ── Round-trip ────────────────────────────────────────────────────────────

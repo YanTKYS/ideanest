@@ -76,8 +76,15 @@ public class TagPanelViewModel : ViewModelBase
     // ── Tag list ──────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// The collection the XAML ListBox binds to (via MainViewModel.TagItems forwarding).
-    /// Reference is stable; Clear + re-Add drives CollectionChanged.
+    /// The full, unfiltered tag list. Stable reference; updated in place by SetAllItems.
+    /// Consumers that must see every tag regardless of TagSearch (e.g. the tag
+    /// management window) bind here.
+    /// </summary>
+    public ObservableCollection<TagItemViewModel> AllItems { get; } = new();
+
+    /// <summary>
+    /// The TagSearch-filtered view used by the side panel ListBox.
+    /// Stable reference; Clear + re-Add drives CollectionChanged.
     /// </summary>
     public ObservableCollection<TagItemViewModel> VisibleItems { get; } = new();
 
@@ -88,6 +95,8 @@ public class TagPanelViewModel : ViewModelBase
     public void SetAllItems(IEnumerable<TagItemViewModel> items)
     {
         _allItems = items.ToList();
+        AllItems.Clear();
+        foreach (var item in _allItems) AllItems.Add(item);
         RefreshVisible();
     }
 
@@ -121,14 +130,25 @@ public class TagPanelViewModel : ViewModelBase
 
     /// <summary>
     /// Restores open state from settings without invoking callbacks.
+    /// Also resets TagSearch — it's a session-local UI filter scoped to a single
+    /// workspace, so a previous workspace's filter must not hide tags in the new one.
     /// The caller (ReloadFromWorkspace) is responsible for calling RefreshTags()
-    /// afterwards so VisibleItems is rebuilt with the latest card data.
+    /// afterwards so AllItems / VisibleItems are rebuilt with the latest card data.
     /// </summary>
     public void LoadFromSettings(WorkspaceSettings settings)
     {
         _isTagPanelOpen = settings.TagPanelOpen;
+
+        bool tagSearchChanged = _tagSearch.Length > 0;
+        _tagSearch = string.Empty;
+
         OnPropertyChanged(nameof(IsTagPanelOpen));
         OnPropertyChanged(nameof(TagPanelButtonLabel));
         OnPropertyChanged(nameof(TagPanelButtonTip));
+        if (tagSearchChanged)
+        {
+            OnPropertyChanged(nameof(TagSearch));
+            OnPropertyChanged(nameof(HasTagSearch));
+        }
     }
 }
