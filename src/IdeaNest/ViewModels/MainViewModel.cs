@@ -18,15 +18,12 @@ namespace IdeaNest.ViewModels;
 public class MainViewModel : ViewModelBase
 {
     private Workspace _workspace = new();
-    private string? _currentFilePath;
-    private bool _isDirty;
-    private string _statusMessage = string.Empty;
-    private DispatcherTimer? _statusClearTimer;
     private DispatcherTimer? _autoSaveTimer;
-    private bool _isAutoSaving;
-    private bool _autoSaveFailed;
-    private DateTime? _lastAutoSaveTime;
+    private DispatcherTimer? _statusClearTimer;
+    private string _statusMessage = string.Empty;
     private static readonly TimeSpan AutoSaveDelay = TimeSpan.FromSeconds(2);
+
+    public SaveStateViewModel SaveState { get; }
     public CardDisplayViewModel CardDisplay { get; }
     public FilterViewModel Filter { get; }
     public TagPanelViewModel TagPanel { get; }
@@ -80,54 +77,21 @@ public class MainViewModel : ViewModelBase
     {
         get
         {
-            var fileLabel = string.IsNullOrEmpty(_currentFilePath) ? "(未保存)" : Path.GetFileName(_currentFilePath);
-            var dirtyMark = _isDirty ? "*" : string.Empty;
+            var fileLabel = string.IsNullOrEmpty(SaveState.CurrentFilePath)
+                ? "(未保存)"
+                : Path.GetFileName(SaveState.CurrentFilePath);
+            var dirtyMark = SaveState.IsDirty ? "*" : string.Empty;
             return $"IdeaNest - {fileLabel}{dirtyMark} - {AppVersion}";
         }
     }
 
-    public string? CurrentFilePath
-    {
-        get => _currentFilePath;
-        private set
-        {
-            if (SetField(ref _currentFilePath, value))
-            {
-                OnPropertyChanged(nameof(Title));
-                OnPropertyChanged(nameof(SaveStatusText));
-            }
-        }
-    }
+    // ── Save state: forward to SaveState sub-ViewModel ────────────────────────
+    // Logic (dirty tracking, auto-save state, status text) lives in SaveStateViewModel.
+    // These thin forwards keep existing XAML bindings working without change.
 
-    public bool IsDirty
-    {
-        get => _isDirty;
-        private set
-        {
-            if (SetField(ref _isDirty, value))
-            {
-                OnPropertyChanged(nameof(Title));
-                OnPropertyChanged(nameof(SaveStatusText));
-            }
-        }
-    }
-
-    public string SaveStatusText
-    {
-        get
-        {
-            if (_isAutoSaving) return "自動保存中...";
-            if (_autoSaveFailed) return "自動保存に失敗しました";
-            if (string.IsNullOrEmpty(CurrentFilePath))
-            {
-                return IsDirty ? "未保存 (新規ファイル)" : "新規ファイル";
-            }
-            if (IsDirty) return "未保存の変更あり";
-            if (_lastAutoSaveTime.HasValue)
-                return $"自動保存しました {_lastAutoSaveTime:HH:mm}";
-            return "保存済み";
-        }
-    }
+    public string? CurrentFilePath => SaveState.CurrentFilePath;
+    public bool IsDirty => SaveState.IsDirty;
+    public string SaveStatusText => SaveState.SaveStatusText;
 
     // ── Filter state: forward to Filter sub-ViewModel ────────────────────────
     // Logic (callback invocation, HasActiveFilter) lives in FilterViewModel.
@@ -251,6 +215,19 @@ public class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
+        SaveState = new SaveStateViewModel();
+        SaveState.PropertyChanged += (_, e) =>
+        {
+            // Relay all SaveState property changes to MainViewModel's bindings.
+            OnPropertyChanged(e.PropertyName);
+            // Title depends on CurrentFilePath and IsDirty; re-raise it when either changes.
+            if (e.PropertyName is nameof(SaveStateViewModel.CurrentFilePath)
+                               or nameof(SaveStateViewModel.IsDirty))
+            {
+                OnPropertyChanged(nameof(Title));
+            }
+        };
+
         CardDisplay = new CardDisplayViewModel(RefreshVisible, MarkDirty);
         CardDisplay.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
@@ -312,18 +289,9 @@ public class MainViewModel : ViewModelBase
     {
         if (!ConfirmDiscardChanges()) return;
         _workspace = new Workspace();
-        CurrentFilePath = null;
-        ReloadFromWorkspace();
-        IsDirty = false;
-        ResetAutoSaveState();
-    }
-
-    private void ResetAutoSaveState()
-    {
         _autoSaveTimer?.Stop();
-        _lastAutoSaveTime = null;
-        _autoSaveFailed = false;
-        OnPropertyChanged(nameof(SaveStatusText));
+        SaveState.Reset();
+        ReloadFromWorkspace();
     }
 
     private void Open()
@@ -338,10 +306,9 @@ public class MainViewModel : ViewModelBase
         try
         {
             _workspace = WorkspaceService.Load(dlg.FileName);
-            CurrentFilePath = dlg.FileName;
+            _autoSaveTimer?.Stop();
+            SaveState.OnFileLoaded(dlg.FileName);
             ReloadFromWorkspace();
-            IsDirty = false;
-            ResetAutoSaveState();
             AppSettingsService.AddRecentFile(dlg.FileName);
         }
         catch (Exception ex)
@@ -379,19 +346,14 @@ public class MainViewModel : ViewModelBase
         {
             SyncWindowSizeBeforeSave();
             WorkspaceService.Save(path, _workspace);
-            CurrentFilePath = path;
-            IsDirty = false;
             _autoSaveTimer?.Stop();
-            // _lastAutoSaveTime は自動保存専用。手動保存後は過去の自動保存時刻を
-            // クリアして SaveStatusText が「保存済み」を返すようにする。
-            _lastAutoSaveTime = null;
-            _autoSaveFailed = false;
-            OnPropertyChanged(nameof(SaveStatusText));
+            SaveState.OnManualSaveSuccess(path);
             return true;
         }
         catch (Exception ex)
         {
-            // _autoSaveFailed は自動保存専用フラグ。手動保存失敗は MessageBox のみで伝える。
+            // _autoSaveFailed is auto-save-only. Manual save failure is surfaced via
+            // MessageBox only; SaveStatusText is unchanged on manual save failure.
             OnPropertyChanged(nameof(SaveStatusText));
             MessageBox.Show($"保存に失敗しました:\n{ex.Message}", "IdeaNest", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
@@ -560,7 +522,7 @@ public class MainViewModel : ViewModelBase
 
     public void MarkDirty()
     {
-        IsDirty = true;
+        SaveState.MarkDirty();
         ScheduleAutoSave();
     }
 
@@ -580,8 +542,7 @@ public class MainViewModel : ViewModelBase
     {
         // Auto-save only fires when we already have a path; new/unsaved files
         // require explicit Save-As so we never pick a path on the user's behalf.
-        if (string.IsNullOrEmpty(CurrentFilePath)) return;
-        if (_isAutoSaving) return;
+        if (!SaveState.CanScheduleAutoSave) return;
 
         if (_autoSaveTimer == null)
         {
@@ -600,31 +561,22 @@ public class MainViewModel : ViewModelBase
 
     private void PerformAutoSave()
     {
-        if (string.IsNullOrEmpty(CurrentFilePath)) return;
-        if (!IsDirty) return;
-        if (_isAutoSaving) return;
+        if (string.IsNullOrEmpty(SaveState.CurrentFilePath)) return;
+        if (!SaveState.IsDirty) return;
+        if (!SaveState.CanScheduleAutoSave) return;
 
-        _isAutoSaving = true;
-        OnPropertyChanged(nameof(SaveStatusText));
-
+        SaveState.OnAutoSaveBegin();
         try
         {
             SyncWindowSizeBeforeSave();
-            WorkspaceService.Save(CurrentFilePath, _workspace);
-            IsDirty = false;
-            _lastAutoSaveTime = DateTime.Now;
-            _autoSaveFailed = false;
+            WorkspaceService.Save(SaveState.CurrentFilePath!, _workspace);
+            SaveState.OnAutoSaveSuccess();
         }
         catch
         {
             // Stay dirty so the user can retry via Ctrl+S; surface the failure
             // through SaveStatusText rather than a modal dialog.
-            _autoSaveFailed = true;
-        }
-        finally
-        {
-            _isAutoSaving = false;
-            OnPropertyChanged(nameof(SaveStatusText));
+            SaveState.OnAutoSaveFail();
         }
     }
 
@@ -801,10 +753,9 @@ public class MainViewModel : ViewModelBase
             try
             {
                 _workspace = WorkspaceService.Load(filePath);
-                CurrentFilePath = filePath;
+                _autoSaveTimer?.Stop();
+                SaveState.OnFileLoaded(filePath);
                 ReloadFromWorkspace();
-                IsDirty = false;
-                ResetAutoSaveState();
                 return;
             }
             catch (Exception ex)

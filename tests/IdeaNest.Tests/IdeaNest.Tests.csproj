@@ -38,6 +38,7 @@
     <Compile Include="..\..\src\IdeaNest\ViewModels\FilterViewModel.cs" Link="ViewModels\FilterViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\IExportPlatform.cs" Link="ViewModels\IExportPlatform.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\IdeaCardViewModel.cs" Link="ViewModels\IdeaCardViewModel.cs" />
+    <Compile Include="..\..\src\IdeaNest\ViewModels\SaveStateViewModel.cs" Link="ViewModels\SaveStateViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\StartupViewModel.cs" Link="ViewModels\StartupViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\TagItemViewModel.cs" Link="ViewModels\TagItemViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\TagPanelViewModel.cs" Link="ViewModels\TagPanelViewModel.cs" />

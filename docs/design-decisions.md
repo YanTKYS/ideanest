@@ -22,7 +22,7 @@
 4. **一度に 1 〜 2 責務を切り出す** — 大規模リファクタリングは避け、
    既存テストが全件グリーンであることを確認しながら進める。
 
-### 分割済み (v0.8.1 〜 v0.8.5)
+### 分割済み (v0.8.1 〜 v0.8.6)
 
 | サブ ViewModel / Service | 担当 | 状態 |
 | --- | --- | --- |
@@ -31,6 +31,7 @@
 | `TagPanelViewModel` | `IsTagPanelOpen` / ボタンラベル・ツールチップ / `TagSearch` / `VisibleItems` / `SelectTag` | ✅ 完了 (v0.8.3) |
 | `ExportViewModel` + `IExportPlatform` | Markdown / NoteNest エクスポート、クリップボードコピー (各 5 メソッド) | ✅ 完了 (v0.8.4) |
 | `RecentFilesService` + `StartupCoordinator` + `StartupViewModel` | 最近使ったファイル一覧の純粋ロジック / 起動引数解決 / スタートダイアログ状態 | ✅ 完了 (v0.8.5) |
+| `SaveStateViewModel` | ファイルパス / dirty フラグ / 自動保存スケジューリング判定 / 保存ステータス文言 | ✅ 完了 (v0.8.6) |
 
 ### 今後の候補 (backlog M12 で継続)
 
@@ -53,6 +54,25 @@
   `SaveFileDialog` のフィルタ文字列・既定拡張子といった UI 詳細を MainViewModel から退避。
   これらの WPF 詳細は今後 UI を別 OS に移植する際の単一の隔離ポイントになる。
 - DI コンテナ導入は引き続き対象外。インスタンスは MainViewModel が `new` で生成する。
+
+### v0.8.6 で保存状態・自動保存まわりを SaveStateViewModel に切り出した理由
+
+- `MainViewModel` に残っていた 5 つのフィールド (`_currentFilePath` / `_isDirty` /
+  `_isAutoSaving` / `_autoSaveFailed` / `_lastAutoSaveTime`) と、それらに依存する
+  `SaveStatusText` 文言生成はすべて純粋なロジックであり、WPF に依存しない。
+- これらを 1 つのクラス (`SaveStateViewModel`) に集め、明示的な遷移メソッド
+  (`MarkDirty` / `OnFileLoaded` / `OnManualSaveSuccess` / `OnAutoSaveBegin` /
+  `OnAutoSaveSuccess` / `OnAutoSaveFail` / `Reset`) として表明することで、
+  状態遷移が読みやすくなり、それぞれの文言が正しく出るかをタイマーなしでテストできる。
+- `Func<DateTime>` を差し込める設計にしたことで、`SaveStatusText` が正しい時刻文字列を
+  含むかも決定論的にテストできる。
+- `DispatcherTimer` は WPF スレッドモデルに依存するため `MainViewModel` に残す。
+  `CanScheduleAutoSave` プロパティ (`CurrentFilePath あり && _isAutoSaving でない`) を
+  公開することで、タイマーを使うかどうかの判断も `MainViewModel` でコンパクトに書ける。
+- `SaveState.PropertyChanged` を `MainViewModel` で購読し、`CurrentFilePath` /
+  `IsDirty` 変化時に `Title` も再通知することで既存 XAML バインディングを無変更で維持。
+- DI コンテナ導入はここでも対象外。`SaveState` は `MainViewModel` のコンストラクタで
+  `new` する。
 
 ### v0.8.5 で起動導線を 3 つに分けた理由
 
