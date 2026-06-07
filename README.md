@@ -138,7 +138,7 @@ dotnet run --project src/IdeaNest/IdeaNest.csproj
 > dotnet run --project tools/IdeaNest.Smoke
 > ```
 
-### Unit テストの実行 (v0.8.1 で追加)
+### Unit テストの実行 (v0.8.0 で追加 / v0.8.1 で CardDisplayViewModel のテストを追加)
 
 `tests/IdeaNest.Tests` に xUnit ベースの単体テストプロジェクトがあります。
 主要な Service / ViewModel ロジック (タグ正規化・ワークスペース保存読込・

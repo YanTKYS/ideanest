@@ -382,7 +382,7 @@ dotnet run --project tools/IdeaNest.Smoke
 
 `ALL CHECKS PASSED` と表示されれば、保存形式と読み書きは健全。
 
-## 補助: 単体テスト (v0.8.1 で追加)
+## 補助: 単体テスト (v0.8.0 で追加 / v0.8.1 で CardDisplayViewModel のテストを追加)
 
 主要な Service / ViewModel ロジックに対する xUnit ベースの単体テストが
 `tests/IdeaNest.Tests` に整備されている。Linux / macOS でも実行可能。
@@ -393,7 +393,7 @@ dotnet test
 
 | # | 観点 | 確認方法 | 期待結果 |
 | --- | --- | --- | --- |
-| UT1 | 単体テストがすべて成功する | `dotnet test` | `Passed!` で終了し、失敗が 0 件 / `tests/IdeaNest.Tests` の `WorkspaceService` / `MarkdownExportService` / `NoteNestExportService` / `IdeaCardViewModel` の各テストが緑になる |
+| UT1 | 単体テストがすべて成功する | `dotnet test` | `Passed!` で終了し、失敗が 0 件 / `tests/IdeaNest.Tests` の `WorkspaceService` / `MarkdownExportService` / `NoteNestExportService` / `IdeaCardViewModel` / `CardDisplayViewModel` (v0.8.1 で追加) の各テストが緑になる |
 | UT2 | テストプロジェクトが単体でビルドできる | `dotnet build tests/IdeaNest.Tests/IdeaNest.Tests.csproj` | エラー 0 件で成功する (WPF を参照していないため Windows 以外でも成功) |
 | UT3 | スモークテストとの併存 | `dotnet run --project tools/IdeaNest.Smoke` を従来どおり実行 | `ALL CHECKS PASSED` が表示される / 単体テスト追加後も挙動に変化がない |
 | UT4 | 既存本体のビルドへの影響なし | Windows 上で `dotnet build src/IdeaNest/IdeaNest.csproj` | 従来どおり成功する (`tests/` 配下を追加してもメインプロジェクトのビルドは変わらない) |

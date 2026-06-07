@@ -317,18 +317,46 @@ public class CardDisplayViewModelTests
     }
 
     [Fact]
-    public void LoadFromSettings_ClearsShuffleOrder()
+    public void ClearShuffleOrder_EmptiesTheSnapshot()
     {
-        int refreshCount = 0;
-        var vm = Make(onRefresh: () => refreshCount++);
-        vm.Reshuffle(new[] { "a", "b" }); // seeds shuffle order
+        var vm = Make();
+        vm.Reshuffle(new[] { "a", "b", "c" });
+        Assert.Equal(3, vm.ShuffleOrderSnapshot.Count);
+
+        vm.ClearShuffleOrder();
+
+        Assert.Empty(vm.ShuffleOrderSnapshot);
+    }
+
+    [Fact]
+    public void LoadFromSettings_ClearsPreviousShuffleOrder()
+    {
+        var vm = Make();
+        vm.Reshuffle(new[] { "old-1", "old-2" });
+        Assert.NotEmpty(vm.ShuffleOrderSnapshot);
 
         vm.LoadFromSettings(new WorkspaceSettings { SortMode = "Shuffle" });
 
-        // OrderByShuffle should re-seed on next call (shuffle was cleared)
-        var cards = new[] { Card("a"), Card("b") };
+        // The shuffle order itself must be empty — not merely "OrderByShuffle returns 2".
+        // Without ClearShuffleOrder(), old-1 / old-2 would still be present here.
+        Assert.Empty(vm.ShuffleOrderSnapshot);
+    }
+
+    [Fact]
+    public void LoadFromSettings_NextOrderByShuffle_ReseedsFromCurrentCards()
+    {
+        var vm = Make();
+        vm.Reshuffle(new[] { "old-1", "old-2" });
+
+        vm.LoadFromSettings(new WorkspaceSettings { SortMode = "Shuffle" });
+
+        var cards = new[] { Card("new-1"), Card("new-2") };
         var result = vm.OrderByShuffle(cards, cards).ToList();
+
         Assert.Equal(2, result.Count);
+        // Re-seeded order must contain only the current card ids — no leftover old-* entries.
+        Assert.Equal(new[] { "new-1", "new-2" }.OrderBy(x => x),
+                     vm.ShuffleOrderSnapshot.OrderBy(x => x));
     }
 
     // ── Shuffle / OrderByShuffle ──────────────────────────────────────────────
