@@ -17,9 +17,8 @@ v0.8.1 〜 v0.8.4 と同様、XAML・既存挙動・保存形式は変更なし�
 
 - **`StartupCoordinator` を新規追加** (`Services/StartupCoordinator.cs`)
   - 担当: 起動引数の解析 → `StartupAction` (`DirectOpen` / `ShowDialog`) の決定
-  - `.ideanest` 拡張子を持ち、かつ存在するファイルのうち最初のものを `DirectOpen` 対象に選ぶ
-    (該当なしの場合は `ShowDialog`)
-  - 複数引数がある場合は先頭から走査して最初の `.ideanest` を採用
+  - 旧 `App.OnStartup` と同一の判定ルールを維持: `args[0]` のみを対象とし、
+    存在するファイルであれば拡張子に関係なく `DirectOpen` とする。後続引数は無視
   - 完全に純粋関数で、`Func<string, bool>` を差し込むことで存在チェックも差し替え可能
 
 - **`StartupViewModel` を新規追加** (`ViewModels/StartupViewModel.cs`)
