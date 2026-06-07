@@ -11,14 +11,16 @@ v0.8.1 / v0.8.2 と同様、XAML・保存形式・既存コマンドは変更な
   - 担当: タグパネル開閉 (`IsTagPanelOpen`)、ボタンラベル / ツールチップ
     (`TagPanelButtonLabel` / `TagPanelButtonTip`)、
     タグ検索欄 (`TagSearch` / `HasTagSearch` / `ClearTagSearch`)、
-    タグ一覧フィルタリング (`VisibleItems` / `SetAllItems`)、
+    タグ一覧管理 (`AllItems` / `VisibleItems` / `SetAllItems`)、
     タグ選択通知 (`SelectTag`)
   - `IsTagPanelOpen` 変更時のみ `onMarkDirty` を呼び出す
     (Settings に保存すべき状態変化だけを通知)
-  - `TagSearch` はローカル表示フィルタ — Settings 非保存・`onMarkDirty` 非呼出
-  - `VisibleItems` は `ObservableCollection<TagItemViewModel>` の安定した参照。
-    内容だけを Clear + Add で更新するため、`MainViewModel.TagItems` プロパティが
-    XAML に安定した参照を提供し続けられる
+  - `TagSearch` はローカル表示フィルタ — Settings 非保存・`onMarkDirty` 非呼出。
+    `LoadFromSettings()` でワークスペース切替時に自動クリアされる
+  - `AllItems` は未フィルタの全件 `ObservableCollection`。タグ管理画面が参照し、
+    `TagSearch` の状態に関係なく常に全タグを扱える
+  - `VisibleItems` は `TagSearch` 適用済みの `ObservableCollection`。サイドパネルが参照する。
+    いずれも安定した参照で、内容だけを Clear + Add で更新する
   - `WorkspaceSettings` との同期: `SyncToSettings` / `LoadFromSettings`
   - WPF 依存なし → `IdeaNest.Tests` でクロスプラットフォームにテスト可能
   - `MainViewModel` はコールバック (`onMarkDirty` / `onTagSelected`) を渡して連携
@@ -26,7 +28,8 @@ v0.8.1 / v0.8.2 と同様、XAML・保存形式・既存コマンドは変更な
 - **`MainViewModel` を更新**
   - `IsTagPanelOpen` / `TagPanelButtonLabel` / `TagPanelButtonTip` を
     `TagPanelViewModel` へ移譲
-  - `TagItems => TagPanel.VisibleItems` で XAML に安定参照を提供
+  - `TagItems => TagPanel.AllItems` でタグ管理画面へ未フィルタの全件一覧を提供
+  - `VisibleTagPanelItems => TagPanel.VisibleItems` でサイドパネルへ検索済み一覧を提供
   - 既存 XAML バインディングへの影響ゼロ:
     薄い転送プロパティを残し、`TagPanel.PropertyChanged` を再発火
   - `RefreshTags` の TagItems 更新を `TagPanel.SetAllItems(tagItems)` に集約
@@ -40,11 +43,13 @@ v0.8.1 / v0.8.2 と同様、XAML・保存形式・既存コマンドは変更な
 
 - **`IdeaNest.Tests.csproj`** に `TagItemViewModel.cs` / `TagPanelViewModel.cs` の
   `<Compile Include>` を追加
-- **新規テスト 33 件** (`TagPanelViewModelTests.cs`):
+- **新規テスト 39 件** (`TagPanelViewModelTests.cs`):
   デフォルト値、`IsTagPanelOpen` の変更・同値・コールバック発火、`Toggle`、
   `TagPanelButtonLabel` / `TagPanelButtonTip` の状態反映、
   `TagSearch` の変更・null 代入・空白のみ判定、`ClearTagSearch` の動作と no-op 確認、
   `VisibleItems` のフィルタリング (空検索で全件表示・大文字小文字無視・一致なし)、
+  `AllItems` が TagSearch によらず全件を保持すること・安定参照の保証、
+  `LoadFromSettings` でのワークスペース切替時 TagSearch クリア動作、
   `SelectTag` のコールバック呼出・null 強制変換、
   `SyncToSettings` / `LoadFromSettings` のラウンドトリップ、
   `onMarkDirty` 発火時には既に最新値が観測可能であるという順序契約
