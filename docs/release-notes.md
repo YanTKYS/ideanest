@@ -32,17 +32,42 @@ v0.8.1〜v0.8.6 の MainViewModel 段階的分割を受けて、**新機能の�
   - "22件" と記載していた `ExportViewModelTests` のテスト数が、
     v0.8.4 レビュー時のスナップショットテスト分割 (1 → 2 件) により実際は 23 件になっていた
 
+### 追加修正 (v0.8.7 横断レビュー対応)
+
+- **`CardDisplayViewModel` 変更時に `MainViewModel.Settings` を即時同期** ([Low])
+  - `FilterViewModel` / `TagPanelViewModel` は変更コールバックで `_workspace.Settings` を
+    即時同期してから `MarkDirty()` を呼ぶが、`CardDisplayViewModel` だけは `MarkDirty` を
+    直接 onMarkDirty に渡しており、`Settings.CardSize` / `CardHeightMode` / `SortMode` の
+    更新が次回の `SyncWindowSizeBeforeSave()` まで遅れていた
+  - `OnCardDisplayChanged()` ヘルパーを追加し、他のサブ ViewModel と同様の構成に揃えた
+  - 通常の保存挙動には影響しないが、`Settings` 参照タイミングの整合性が改善
+
+- **`CardDisplayViewModel` テストに onMarkDirty 順序契約テストを 3 件追加**
+  - `CardSize` / `CardHeightMode` / `SortMode` のそれぞれについて、onMarkDirty コールバック内で
+    `SyncToSettings` を呼んだときに新しい値が反映されることを検証
+  - `MainViewModel` 側で「コールバック内で `SyncToSettings` → `MarkDirty` の順に書ける」契約を
+    クロスプラットフォームで固定
+
+- **`SaveTo` catch ブロックのコメント文言を改善** ([Low])
+  - 「SaveStatusText is unchanged (IsDirty stays true, SaveState is unmodified)」のうち、
+    `IsDirty stays true` は手動保存失敗時に `IsDirty=false` のケース
+    (例: 保存済み状態から不変ファイルへ Ctrl+S → 保存失敗) があるため不正確だった
+  - 「SaveStatusText is unchanged because SaveState is left unmodified」に修正
+
 ### 変更なし
 
 - 保存ファイル形式 (`.ideanest`) / `settings.json` 形式 / XAML / メニュー構成 /
   キーボードショートカット / 自動保存挙動 / エクスポート出力形式 — **すべて変更なし**
 - 新しい ViewModel の追加・MainViewModel の大規模分割 — **実施しない**
-- 単体テストの追加 — **なし** (全 260 件引き続き Pass)
+- 全 263 件の単体テストが Pass (v0.8.6 時点 260 件 + 3 件追加)
 
 ### 影響範囲
 
 - `src/IdeaNest/ViewModels/MainViewModel.cs`
-  (SaveTo catch ブロックの冗長 `OnPropertyChanged` を削除)
+  (SaveTo catch ブロックの冗長 `OnPropertyChanged` 削除、コメント文言訂正、
+   `OnCardDisplayChanged()` 追加と `CardDisplayViewModel` への配線)
+- `tests/IdeaNest.Tests/ViewModels/CardDisplayViewModelTests.cs`
+  (onMarkDirty 順序契約テスト 3 件追加)
 - `docs/release-notes.md`
   (v0.8.4 テスト件数を 22 → 23 に訂正)
 - `src/IdeaNest/IdeaNest.csproj` の `<Version>` を `0.8.6` → `0.8.7` に更新

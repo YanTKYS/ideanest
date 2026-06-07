@@ -422,4 +422,56 @@ public class CardDisplayViewModelTests
         Assert.Equal(2, result.Count);
         Assert.DoesNotContain(result, c => c.Id == "pinned");
     }
+
+    // ── onMarkDirty callback ordering ────────────────────────────────────────
+    // MainViewModel wires onMarkDirty to OnCardDisplayChanged, which calls
+    // CardDisplay.SyncToSettings(_workspace.Settings) before MarkDirty().
+    // The contract these tests pin: by the time onMarkDirty fires, the new
+    // value is already readable from the VM (and therefore writeable to
+    // settings inside the callback).
+
+    [Fact]
+    public void CardSize_OnMarkDirty_FiresAfter_FieldUpdate()
+    {
+        var settings = new WorkspaceSettings { CardSize = "medium" };
+        CardDisplayViewModel? vm = null;
+        vm = new CardDisplayViewModel(
+            onRefreshVisible: () => { },
+            onMarkDirty: () => vm!.SyncToSettings(settings));
+
+        vm.CardSize = "large";
+
+        // If onMarkDirty fired before the field was updated, settings would
+        // still hold "medium". Pinning that the callback can write the new
+        // value protects MainViewModel.Settings from going stale.
+        Assert.Equal("large", settings.CardSize);
+    }
+
+    [Fact]
+    public void CardHeightMode_OnMarkDirty_FiresAfter_FieldUpdate()
+    {
+        var settings = new WorkspaceSettings { CardHeightMode = "fixed" };
+        CardDisplayViewModel? vm = null;
+        vm = new CardDisplayViewModel(
+            onRefreshVisible: () => { },
+            onMarkDirty: () => vm!.SyncToSettings(settings));
+
+        vm.CardHeightMode = "auto";
+
+        Assert.Equal("auto", settings.CardHeightMode);
+    }
+
+    [Fact]
+    public void SortMode_OnMarkDirty_FiresAfter_FieldUpdate()
+    {
+        var settings = new WorkspaceSettings { SortMode = "UpdatedDesc" };
+        CardDisplayViewModel? vm = null;
+        vm = new CardDisplayViewModel(
+            onRefreshVisible: () => { },
+            onMarkDirty: () => vm!.SyncToSettings(settings));
+
+        vm.SortMode = "TitleAsc";
+
+        Assert.Equal("TitleAsc", settings.SortMode);
+    }
 }
