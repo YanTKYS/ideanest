@@ -34,6 +34,8 @@
     <Compile Include="..\..\src\IdeaNest\ViewModels\CardDisplayViewModel.cs" Link="ViewModels\CardDisplayViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\FilterViewModel.cs" Link="ViewModels\FilterViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\IdeaCardViewModel.cs" Link="ViewModels\IdeaCardViewModel.cs" />
+    <Compile Include="..\..\src\IdeaNest\ViewModels\TagItemViewModel.cs" Link="ViewModels\TagItemViewModel.cs" />
+    <Compile Include="..\..\src\IdeaNest\ViewModels\TagPanelViewModel.cs" Link="ViewModels\TagPanelViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\ViewModelBase.cs" Link="ViewModels\ViewModelBase.cs" />
   </ItemGroup>
 
