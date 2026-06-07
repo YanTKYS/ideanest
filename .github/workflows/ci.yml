@@ -25,5 +25,8 @@ jobs:
       - name: Build (Release)
         run: dotnet build IdeaNest.sln --configuration Release --no-restore
 
+      - name: Unit tests
+        run: dotnet test tests/IdeaNest.Tests/IdeaNest.Tests.csproj --configuration Release --no-build --nologo
+
       - name: Smoke test
         run: dotnet run --project tools/IdeaNest.Smoke/IdeaNest.Smoke.csproj --configuration Release --no-build
