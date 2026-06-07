@@ -32,10 +32,8 @@ public class MainViewModel : ViewModelBase
     private string _selectedColor = string.Empty;
     private bool _showArchived;
     private bool _isTagPanelOpen = false;
-    private string _cardSize = "medium";
-    private string _cardHeightMode = "fixed";
-    private string _sortMode = "UpdatedDesc";
-    private List<string> _shuffleOrder = new();
+
+    public CardDisplayViewModel CardDisplay { get; }
 
     public ObservableCollection<IdeaCardViewModel> AllCards { get; } = new();
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
@@ -197,95 +195,25 @@ public class MainViewModel : ViewModelBase
     public string TagPanelButtonLabel => IsTagPanelOpen ? "タグ ◀" : "タグ ▶";
     public string TagPanelButtonTip   => IsTagPanelOpen ? "タグパネルを閉じる" : "タグパネルを表示";
 
-    public string CardSize
-    {
-        get => _cardSize;
-        set
-        {
-            var v = value switch { "small" => "small", "large" => "large", _ => "medium" };
-            if (SetField(ref _cardSize, v))
-            {
-                _workspace.Settings.CardSize = v;
-                OnPropertyChanged(nameof(CardWidth));
-                OnPropertyChanged(nameof(CardHeight));
-                OnPropertyChanged(nameof(CardMinHeight));
-                OnPropertyChanged(nameof(CardMaxHeight));
-                MarkDirty();
-            }
-            // Notify flags unconditionally so that re-clicking the current menu item
-            // (which momentarily unchecks it in WPF) gets corrected by the binding.
-            OnPropertyChanged(nameof(IsCardSizeSmall));
-            OnPropertyChanged(nameof(IsCardSizeMedium));
-            OnPropertyChanged(nameof(IsCardSizeLarge));
-        }
-    }
+    // ── Card display: forward to CardDisplay sub-ViewModel ────────────────────
+    // Logic (dimension calculations, validation, shuffle) lives in CardDisplayViewModel.
+    // These thin forwards keep existing XAML bindings working without change.
 
-    public string CardHeightMode
-    {
-        get => _cardHeightMode;
-        set
-        {
-            var v = value switch { "auto" => "auto", _ => "fixed" };
-            if (SetField(ref _cardHeightMode, v))
-            {
-                _workspace.Settings.CardHeightMode = v;
-                OnPropertyChanged(nameof(CardHeight));
-                OnPropertyChanged(nameof(CardMinHeight));
-                OnPropertyChanged(nameof(CardMaxHeight));
-                MarkDirty();
-            }
-            OnPropertyChanged(nameof(IsCardHeightFixed));
-            OnPropertyChanged(nameof(IsCardHeightAuto));
-        }
-    }
+    public string CardSize       { get => CardDisplay.CardSize;       set => CardDisplay.CardSize = value; }
+    public string CardHeightMode { get => CardDisplay.CardHeightMode; set => CardDisplay.CardHeightMode = value; }
+    public string SortMode       { get => CardDisplay.SortMode;       set => CardDisplay.SortMode = value; }
 
-    public double CardWidth  => _cardSize switch { "small" => 184, "large" => 340, _ => 252 };
+    public double CardWidth     => CardDisplay.CardWidth;
+    public double CardHeight    => CardDisplay.CardHeight;
+    public double CardMinHeight => CardDisplay.CardMinHeight;
+    public double CardMaxHeight => CardDisplay.CardMaxHeight;
 
-    // Auto height returns double.NaN so the Border sizes to its content
-    // (capped by CardMinHeight / CardMaxHeight).
-    public double CardHeight => _cardHeightMode == "auto"
-        ? double.NaN
-        : _cardSize switch { "small" => 148, "large" => 280, _ => 212 };
-
-    public double CardMinHeight => _cardHeightMode == "auto"
-        ? (_cardSize switch { "small" => 110, "large" => 180, _ => 140 })
-        : 0;
-
-    public double CardMaxHeight => _cardHeightMode == "auto"
-        ? (_cardSize switch { "small" => 200, "large" => 380, _ => 280 })
-        : double.PositiveInfinity;
-
-    public bool IsCardSizeSmall  => _cardSize == "small";
-    public bool IsCardSizeMedium => _cardSize == "medium";
-    public bool IsCardSizeLarge  => _cardSize == "large";
-
-    public bool IsCardHeightFixed => _cardHeightMode == "fixed";
-    public bool IsCardHeightAuto  => _cardHeightMode == "auto";
-
-    public string SortMode
-    {
-        get => _sortMode;
-        set
-        {
-            var v = value switch
-            {
-                "CreatedDesc" => "CreatedDesc",
-                "TitleAsc"    => "TitleAsc",
-                "Shuffle"     => "Shuffle",
-                _             => "UpdatedDesc",
-            };
-            if (SetField(ref _sortMode, v))
-            {
-                _workspace.Settings.SortMode = v;
-                OnPropertyChanged(nameof(IsShuffleMode));
-                if (v == "Shuffle") GenerateShuffleOrder();
-                RefreshVisible();
-                MarkDirty();
-            }
-        }
-    }
-
-    public bool IsShuffleMode => _sortMode == "Shuffle";
+    public bool IsCardSizeSmall  => CardDisplay.IsCardSizeSmall;
+    public bool IsCardSizeMedium => CardDisplay.IsCardSizeMedium;
+    public bool IsCardSizeLarge  => CardDisplay.IsCardSizeLarge;
+    public bool IsCardHeightFixed => CardDisplay.IsCardHeightFixed;
+    public bool IsCardHeightAuto  => CardDisplay.IsCardHeightAuto;
+    public bool IsShuffleMode     => CardDisplay.IsShuffleMode;
 
     public WorkspaceSettings Settings => _workspace.Settings;
 
@@ -371,6 +299,12 @@ public class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
+        CardDisplay = new CardDisplayViewModel(RefreshVisible, MarkDirty);
+        // Relay all CardDisplay property-change notifications as if they came from
+        // this ViewModel so that existing XAML bindings (e.g. {Binding CardWidth})
+        // continue to work without any XAML changes.
+        CardDisplay.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
+
         NewWorkspaceCommand    = new RelayCommand(_ => NewWorkspace());
         OpenCommand            = new RelayCommand(_ => Open());
         SaveCommand            = new RelayCommand(_ => Save());
@@ -393,30 +327,10 @@ public class MainViewModel : ViewModelBase
         ExportNoteNestCommand     = new RelayCommand(_ => ExportNoteNest());
         CopyNoteNestCommand       = new RelayCommand(_ => CopyNoteNest());
         ToggleTagPanelCommand     = new RelayCommand(_ => IsTagPanelOpen = !IsTagPanelOpen);
-        SetCardSizeCommand        = new RelayCommand(p => CardSize = p as string ?? "medium");
-        SetCardHeightModeCommand  = new RelayCommand(p => CardHeightMode = p as string ?? "fixed");
-        ReshuffleCommand          = new RelayCommand(_ => Reshuffle());
-    }
-
-    private void GenerateShuffleOrder()
-    {
-        var ids = AllCards.Where(c => !c.IsPinned).Select(c => c.Id).ToList();
-        var rng = new Random();
-        for (int i = ids.Count - 1; i > 0; i--)
-        {
-            int j = rng.Next(i + 1);
-            (ids[i], ids[j]) = (ids[j], ids[i]);
-        }
-        _shuffleOrder = ids;
-    }
-
-    private void Reshuffle()
-    {
-        GenerateShuffleOrder();
-        RefreshVisible();
-        // Reshuffle is a user-visible change worth persisting only as "we are in
-        // Shuffle mode" — the order itself is not saved. No MarkDirty here since
-        // SortMode itself did not change.
+        SetCardSizeCommand        = new RelayCommand(p => CardDisplay.CardSize = p as string ?? "medium");
+        SetCardHeightModeCommand  = new RelayCommand(p => CardDisplay.CardHeightMode = p as string ?? "fixed");
+        ReshuffleCommand          = new RelayCommand(_ =>
+            CardDisplay.Reshuffle(AllCards.Where(c => !c.IsPinned).Select(c => c.Id)));
     }
 
     private void RaiseCountAndEmptyStateChanged()
@@ -532,9 +446,7 @@ public class MainViewModel : ViewModelBase
         _workspace.Settings.SelectedTag = SelectedTag;
         _workspace.Settings.SelectedColor = SelectedColor;
         _workspace.Settings.ShowArchived = ShowArchived;
-        _workspace.Settings.CardSize = _cardSize;
-        _workspace.Settings.CardHeightMode = _cardHeightMode;
-        _workspace.Settings.SortMode = _sortMode;
+        CardDisplay.SyncToSettings(_workspace.Settings);
     }
 
     public bool ConfirmDiscardChanges()
@@ -754,16 +666,10 @@ public class MainViewModel : ViewModelBase
         _selectedColor = _workspace.Settings.SelectedColor ?? string.Empty;
         _showArchived = _workspace.Settings.ShowArchived;
         _isTagPanelOpen = _workspace.Settings.TagPanelOpen;
-        _cardSize = _workspace.Settings.CardSize switch { "small" => "small", "large" => "large", _ => "medium" };
-        _cardHeightMode = _workspace.Settings.CardHeightMode switch { "auto" => "auto", _ => "fixed" };
-        _sortMode = _workspace.Settings.SortMode switch
-        {
-            "CreatedDesc" => "CreatedDesc",
-            "TitleAsc"    => "TitleAsc",
-            "Shuffle"     => "Shuffle",
-            _             => "UpdatedDesc",
-        };
-        _shuffleOrder.Clear();
+        // Card display settings (size, height mode, sort, shuffle) are owned by
+        // CardDisplayViewModel; its LoadFromSettings fires all derived PropertyChanged
+        // notifications, which are relayed to MainViewModel via the subscribed handler.
+        CardDisplay.LoadFromSettings(_workspace.Settings);
         OnPropertyChanged(nameof(SearchText));
         OnPropertyChanged(nameof(SelectedTag));
         OnPropertyChanged(nameof(SelectedColor));
@@ -771,19 +677,6 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsTagPanelOpen));
         OnPropertyChanged(nameof(TagPanelButtonLabel));
         OnPropertyChanged(nameof(TagPanelButtonTip));
-        OnPropertyChanged(nameof(CardSize));
-        OnPropertyChanged(nameof(CardWidth));
-        OnPropertyChanged(nameof(CardHeight));
-        OnPropertyChanged(nameof(CardMinHeight));
-        OnPropertyChanged(nameof(CardMaxHeight));
-        OnPropertyChanged(nameof(IsCardSizeSmall));
-        OnPropertyChanged(nameof(IsCardSizeMedium));
-        OnPropertyChanged(nameof(IsCardSizeLarge));
-        OnPropertyChanged(nameof(CardHeightMode));
-        OnPropertyChanged(nameof(IsCardHeightFixed));
-        OnPropertyChanged(nameof(IsCardHeightAuto));
-        OnPropertyChanged(nameof(SortMode));
-        OnPropertyChanged(nameof(IsShuffleMode));
         RefreshTags();
         RefreshVisible();
     }
@@ -1092,11 +985,11 @@ public class MainViewModel : ViewModelBase
                           .OrderByDescending(c => c.UpdatedAt);
 
         var rest = items.Where(c => !c.IsPinned);
-        rest = _sortMode switch
+        rest = CardDisplay.SortMode switch
         {
             "CreatedDesc" => rest.OrderByDescending(c => c.CreatedAt),
             "TitleAsc"    => rest.OrderBy(c => c.DisplayTitle, StringComparer.CurrentCulture),
-            "Shuffle"     => OrderByShuffle(rest),
+            "Shuffle"     => CardDisplay.OrderByShuffle(rest, AllCards),
             _             => rest.OrderByDescending(c => c.UpdatedAt),
         };
 
@@ -1107,31 +1000,6 @@ public class MainViewModel : ViewModelBase
 
         RaiseCountAndEmptyStateChanged();
         RandomPreviewCommand.RaiseCanExecuteChanged();
-    }
-
-    private IEnumerable<IdeaCardViewModel> OrderByShuffle(IEnumerable<IdeaCardViewModel> source)
-    {
-        // Lazily seed and append unknown ids so freshly added cards still appear
-        // in shuffle mode without losing the previously-shown order.
-        if (_shuffleOrder.Count == 0)
-        {
-            GenerateShuffleOrder();
-        }
-        else
-        {
-            foreach (var c in AllCards)
-            {
-                // Newly added cards surface at the top of shuffle mode so the user
-                // sees their just-added idea instead of it being buried.
-                if (!c.IsPinned && !_shuffleOrder.Contains(c.Id))
-                    _shuffleOrder.Insert(0, c.Id);
-            }
-        }
-        return source.OrderBy(c =>
-        {
-            var idx = _shuffleOrder.IndexOf(c.Id);
-            return idx >= 0 ? idx : int.MaxValue;
-        });
     }
 
     public void LoadStartup(string? filePath = null)

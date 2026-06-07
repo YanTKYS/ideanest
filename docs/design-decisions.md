@@ -3,6 +3,39 @@
 このドキュメントは「なぜこの形にしたか」を残すためのものです。
 迷ったら、ここを参照して再判断します。
 
+## MainViewModel の段階的分割方針 (v0.8.1 〜)
+
+### 背景と方針
+
+`MainViewModel` は v0.7.x までにアプリ全体の状態・コマンドを集約しており、
+1000 行を超えていた。全面分割は影響範囲が大きいため、以下の方針で段階的に進める。
+
+1. **WPF 非依存な責務から切り出す** — `System.Windows` を import しないサブ ViewModel は
+   `IdeaNest.Tests` に `<Compile Include>` で追加でき、クロスプラットフォームで
+   単体テストを書ける。これが安全網として機能する。
+2. **コールバック渡しで疎結合を保つ** — サブ ViewModel はコンストラクタで
+   `Action onRefreshVisible` / `Action onMarkDirty` を受け取り、
+   WPF や `MainViewModel` の具体的な型を知らなくて済む。
+3. **XAML バインディングを変えない** — `MainViewModel` は薄い転送プロパティを残し、
+   `CardDisplay.PropertyChanged` を `MainViewModel.PropertyChanged` として再発火する。
+   これにより `{Binding CardWidth}` 等の既存 XAML を無変更で維持できる。
+4. **一度に 1 〜 2 責務を切り出す** — 大規模リファクタリングは避け、
+   既存テストが全件グリーンであることを確認しながら進める。
+
+### 分割済み (v0.8.1)
+
+| サブ ViewModel | 担当 | 状態 |
+| --- | --- | --- |
+| `CardDisplayViewModel` | カードサイズ / 高さモード / ソート / シャッフル | ✅ 完了 |
+
+### 今後の候補 (backlog M12 で継続)
+
+| 候補 | 担当 | 備考 |
+| --- | --- | --- |
+| `FilterViewModel` | `SearchText` / `SelectedTag` / `SelectedColor` / `ShowArchived` / `HasActiveFilter` | WPF 非依存になりやすい |
+| `TagPanelViewModel` | `IsTagPanelOpen` / ラベル / `ToggleTagPanelCommand` | 小規模 |
+| `TagManagementViewModel` | `RenameTag` / `DeleteTag` / `AvailableTags` / `TagItems` | `AllCards` 参照あり、要設計 |
+
 ## なぜカード型 UI にしたか
 
 - 想定するユースケースが「思いつき」「断片」「短文」だから。

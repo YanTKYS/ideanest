@@ -1,5 +1,46 @@
 # リリースノート
 
+## v0.8.1 (MainViewModel分割 第1段階：CardDisplayViewModel抽出) — 2026-06-07
+
+`MainViewModel` のカード表示設定に関する責務を `CardDisplayViewModel` に切り出しました。
+v0.8.0 で整備した単体テストを安全網として活用し、既存動作を変えずに内部構造を改善しています。
+
+### 変更内容
+
+- **`CardDisplayViewModel` を新規追加** (`ViewModels/CardDisplayViewModel.cs`)
+  - 担当: カードサイズ (`CardSize`)、高さモード (`CardHeightMode`)、並び順 (`SortMode`)、
+    シャッフル管理 (`_shuffleOrder` / `OrderByShuffle` / `Reshuffle` / `GenerateShuffleOrder`)
+  - すべての寸法計算 (`CardWidth` / `CardHeight` / `CardMinHeight` / `CardMaxHeight`)
+    とフラグ (`IsCardSize*` / `IsCardHeight*` / `IsShuffleMode`) を所有
+  - `WorkspaceSettings` との同期: `SyncToSettings` / `LoadFromSettings`
+  - WPF 依存なし → `IdeaNest.Tests` でクロスプラットフォームにテスト可能
+  - `MainViewModel` はコールバック (`onRefreshVisible` / `onMarkDirty`) を渡して連携
+
+- **`MainViewModel` を更新**
+  - 上記プロパティ・メソッドを `CardDisplayViewModel` へ移譲
+  - 既存 XAML バインディングへの影響ゼロ:
+    `MainViewModel` は薄い転送プロパティ (forwarding getters/setters) を残し、
+    `CardDisplay.PropertyChanged` を受け取って `MainViewModel.PropertyChanged` として
+    再発火することで、既存の `{Binding CardWidth}` 等が変更なしで動作する
+  - `SetCardSizeCommand` / `SetCardHeightModeCommand` / `ReshuffleCommand` は
+    `CardDisplay` の setters / `Reshuffle(nonPinnedIds)` に委譲
+
+- **`IdeaNest.Tests.csproj`** に `CardDisplayViewModel.cs` の `<Compile Include>` を追加
+- **新規テスト 35 件** (`CardDisplayViewModelTests.cs`):
+  デフォルト値、CardWidth/CardHeight/CardMin/MaxHeight の全サイズ×モード組み合わせ、
+  フラグ、入力値バリデーション、コールバック発火、`PropertyChanged` 通知、
+  `SyncToSettings` / `LoadFromSettings` のラウンドトリップ、シャッフル動作
+
+### 影響範囲
+
+- `src/IdeaNest/ViewModels/CardDisplayViewModel.cs` (新規)
+- `src/IdeaNest/ViewModels/MainViewModel.cs` (内部リファクタリングのみ、公開インターフェース不変)
+- `tests/IdeaNest.Tests/IdeaNest.Tests.csproj` / `CardDisplayViewModelTests.cs` (新規)
+- `src/IdeaNest/IdeaNest.csproj` の `<Version>` を `0.8.0` → `0.8.1` に更新
+- 保存ファイル形式 (`.ideanest`) / XAML / メニュー構成 / 既存コマンド — **変更なし**
+
+---
+
 ## v0.8.0 (Unit Testプロジェクト追加) — 2026-06-07
 
 `IdeaNest.Tests` プロジェクトを新規追加し、UI 非依存のロジックに対する
