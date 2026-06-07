@@ -1,5 +1,50 @@
 # リリースノート
 
+## v0.8.6 (保存状態分割：SaveStateViewModel 抽出) — 2026-06-07
+
+`MainViewModel` に残っていた保存状態・自動保存まわりの責務を `SaveStateViewModel` に切り出しました。
+v0.8.1 〜 v0.8.5 と同様、XAML・既存挙動・保存形式は変更なし。
+
+### 変更内容
+
+- **`SaveStateViewModel` を新規追加** (`ViewModels/SaveStateViewModel.cs`)
+  - 担当: ファイルパス管理 (`CurrentFilePath`)、未保存変更フラグ (`IsDirty`)、
+    自動保存スケジューリング判定 (`CanScheduleAutoSave`)、保存ステータス文言 (`SaveStatusText`)
+  - 遷移メソッド: `MarkDirty` / `OnFileLoaded` / `OnManualSaveSuccess` / `Reset` /
+    `OnAutoSaveBegin` / `OnAutoSaveSuccess` / `OnAutoSaveFail`
+  - `Func<DateTime>` を差し込むことで `DateTime.Now` も置換可能 — テストでの時刻固定に使用
+  - WPF 非依存。`IdeaNest.Tests` でクロスプラットフォームに単体テストできる
+
+- **`MainViewModel` を更新**
+  - `_currentFilePath` / `_isDirty` / `_isAutoSaving` / `_autoSaveFailed` /
+    `_lastAutoSaveTime` の各フィールドを削除し、`SaveState` サブ ViewModel に移動
+  - `DispatcherTimer` (WPF 依存) は引き続き `MainViewModel` に保持
+  - `CurrentFilePath` / `IsDirty` / `SaveStatusText` はすべて `SaveState` への転送プロパティ
+  - `Title` は `SaveState.CurrentFilePath` / `SaveState.IsDirty` から構築
+  - `SaveState.PropertyChanged` を購読し、`CurrentFilePath` / `IsDirty` 変化時は
+    `Title` も再通知 (既存 XAML バインディングへの影響ゼロ)
+  - `NewWorkspace` / `Open` / `SaveTo` / `LoadStartup` は各遷移メソッドを呼び出す形に置換
+  - `MarkDirty()` / `ScheduleAutoSave()` / `PerformAutoSave()` は `SaveState` 経由に変更
+  - `ResetAutoSaveState()` プライベートメソッドを削除 (`SaveState.Reset()` / `OnFileLoaded()` に吸収)
+
+- **`IdeaNest.Tests.csproj`** に `SaveStateViewModel.cs` の `<Compile Include>` を追加
+
+- **新規テスト 29 件** (`SaveStateViewModelTests.cs`):
+  初期状態・`MarkDirty`・`OnFileLoaded`・`OnManualSaveSuccess`・`Reset`・
+  自動保存ライフサイクル (`OnAutoSaveBegin` / `OnAutoSaveSuccess` / `OnAutoSaveFail`)・
+  終了時確認フラグ (`IsDirty`) の各遷移を網羅
+
+### 影響範囲
+
+- `src/IdeaNest/ViewModels/SaveStateViewModel.cs` (新規)
+- `src/IdeaNest/ViewModels/MainViewModel.cs` (内部リファクタリングのみ、公開コマンド・プロパティの挙動不変)
+- `tests/IdeaNest.Tests/IdeaNest.Tests.csproj` / `ViewModels/SaveStateViewModelTests.cs` (新規)
+- `src/IdeaNest/IdeaNest.csproj` の `<Version>` を `0.8.5` → `0.8.6` に更新
+- 保存ファイル形式 / `settings.json` 形式 / XAML / メニュー構成 / 自動保存間隔 /
+  保存挙動 / タイトルバー表示 — **変更なし**
+
+---
+
 ## v0.8.5 (起動導線分割：RecentFilesService / StartupCoordinator / StartupViewModel 抽出) — 2026-06-07
 
 起動時の責務 (コマンドライン引数の解決・最近使ったファイル一覧・スタートダイアログ) を
