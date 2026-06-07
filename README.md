@@ -39,7 +39,7 @@ v0.1.2 で画面の見た目を以下のように整理しました。
 外部 UI ライブラリ (MahApps.Metro / Material Design / Fluent UI 等) や
 WebView2 は導入せず、WPF 標準機能の範囲で実現しています。
 
-## 主な機能 (v0.7.3)
+## 主な機能 (v0.8.0)
 
 - アイデアカードの追加・編集・削除
 - カード型の一覧表示 (ピン留めが上に来る) — カード操作ボタンはホバー時のみ表示
@@ -137,6 +137,27 @@ dotnet run --project src/IdeaNest/IdeaNest.csproj
 > ```bash
 > dotnet run --project tools/IdeaNest.Smoke
 > ```
+
+### Unit テストの実行 (v0.8.0 で追加)
+
+`tests/IdeaNest.Tests` に xUnit ベースの単体テストプロジェクトがあります。
+主要な Service / ViewModel ロジック (タグ正規化・ワークスペース保存読込・
+Markdown / NoteNest エクスポート・カード表示ロジックなど) をカバーしており、
+Linux / macOS でも実行できます。
+
+```powershell
+dotnet test
+```
+
+特定のプロジェクトだけを対象にしたい場合は次のとおり。
+
+```powershell
+dotnet test tests/IdeaNest.Tests/IdeaNest.Tests.csproj
+```
+
+`IdeaNest` 本体プロジェクトは WPF のため Windows 専用ですが、テスト対象の
+ソースは `<Compile Include>` でリンクしているため、テストプロジェクト自身は
+`net8.0` をターゲットにしておりクロスプラットフォームで動作します。
 
 ## `.ideanest` ファイルについて
 

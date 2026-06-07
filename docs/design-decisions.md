@@ -377,6 +377,27 @@ v0.2.0 でのタグ正規化は「前後空白除去」「先頭 `#` 除去」�
   行内の高さばらつきだけを許容する形に留める。完全な Masonry が必要になった場合は
   カスタム `Panel` の実装が要るため、backlog で別途検討する。
 
+## なぜ Unit Test プロジェクトを `net8.0` + `<Compile Include>` 構成にしたか (v0.8.0)
+
+- 本体 `IdeaNest` は WPF を使うため `net8.0-windows` をターゲットとしており、
+  プロジェクト参照 (`<ProjectReference>`) を行うと、テストプロジェクトも
+  Windows 専用になり、Linux / macOS / CI コンテナで `dotnet test` を実行できなくなる。
+- 一方、テストしたいロジック (タグ正規化、`WorkspaceService`、エクスポート、
+  カード表示計算など) は WPF 非依存で、すでに `tools/IdeaNest.Smoke` が
+  `<Compile Include>` で同じファイルをリンクしてクロスプラットフォームに動かしている。
+- そこで `IdeaNest.Tests` も同じ方針を採用。`TargetFramework=net8.0`、
+  `<ProjectReference>` 無し、必要なソースだけ `<Compile Include>` でリンクする。
+  これで Linux でも `dotnet test` が走り、`MainViewModel` を分割する際の
+  安全網として機能する。
+- 代償として「テストに登場するクラスを増やすたびに `csproj` の `<Compile Include>`
+  を追記する必要」が生じるが、追加コストは小さく、テスト対象が WPF に
+  侵食されるのを抑える効果のほうが大きい。
+- `xUnit` を選んだのは `.NET 8` テンプレートの既定であり、追加学習コストが
+  低いため。MSTest / NUnit を選ぶ強い理由は今回はない。
+- 将来 `MainViewModel` を分割した結果として WPF 非依存のサブ ViewModel が
+  生まれたら、同じ `<Compile Include>` リストに追加してテストを足していけば
+  そのまま運用できる。
+
 ## なぜ NoteNest とは別ツールにしたか
 
 - 同じアプリの中に「腰を据えて書く画面」と「雑に溜める画面」を同居させると、

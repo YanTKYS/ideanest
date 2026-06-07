@@ -1,5 +1,51 @@
 # リリースノート
 
+## v0.8.0 (Unit Testプロジェクト追加) — 2026-06-07
+
+`IdeaNest.Tests` プロジェクトを新規追加し、UI 非依存のロジックに対する
+単体テスト基盤を導入しました。
+今後 `MainViewModel` の分割など内部リファクタリングを進める前の安全網として、
+代表的な Service / ViewModel に xUnit ベースのテストを整備しています。
+
+### 変更内容
+
+- **`tests/IdeaNest.Tests` プロジェクトを追加** (`net8.0`, xUnit)
+  - `tools/IdeaNest.Smoke` と同じ方針で、テスト対象のソースを `<Compile Include>`
+    でリンクし、WPF (`net8.0-windows`) に依存せずクロスプラットフォームで実行できる構成
+  - `IdeaNest.sln` にも追加済み
+- **テスト対象 (v0.8.0 時点)**
+  - `WorkspaceService` — タグ正規化 (`NormalizeTag` / `NormalizeTags`)、`Save` / `Load`
+    のラウンドトリップ、`.bak` 生成、旧形式 (settings なし / `cardHeightMode` なし)
+    の読み込み互換性
+  - `MarkdownExportService` — 色名表示マップ、単一カード書式、`FormatAll` の
+    ヘッダ・件数・区切り、フィルタ表示行の有無
+  - `NoteNestExportService` — 連番タイトル、メタ情報の出し分け、`[NOTE]` / `[TODO]`
+    マーカーの有無
+  - `IdeaCardViewModel` — `DisplayTitle` のフォールバック / 切り詰め、`BodyPreview`
+    の 4 行 / 200 文字制限、`TagsText`、`BackgroundBrush` のマッピング、
+    `Touch` 後の `UpdatedAt` 更新、`Title` 設定時の `PropertyChanged` 発火
+- **`dotnet test` で 56 件のテストが成功することを確認** (Linux 環境含む)
+- **README にテスト実行方法を追記** (`dotnet test`)
+
+### 影響範囲
+
+- `tests/IdeaNest.Tests/IdeaNest.Tests.csproj`・テストソースを新規追加
+- `IdeaNest.sln` にテストプロジェクト参照を追加
+- `src/IdeaNest/IdeaNest.csproj` の `<Version>` を `0.7.3` → `0.8.0` に更新
+  (タイトルバーが `ver0.8.0` 表記になる)
+- 本体コード (`src/IdeaNest/**`) には変更なし。既存機能の挙動・保存ファイル形式・
+  メニュー構成は v0.7.3 と同一
+
+### スコープ外 (今後の検討事項)
+
+- `MainViewModel` 自体の単体テスト整備 (`MainViewModel` の責務分割と併せて検討。
+  backlog M11/M12 で継続管理)
+- `AppSettingsService` のテスト (`%AppData%` 固定パスのためフックポイントが必要。
+  別途検討)
+- UI / E2E テスト (WPF 自動操作は今回スコープ外)
+
+---
+
 ## v0.7.3 (高さ可変カードの行内ストレッチ修正) — 2026-06-06
 
 v0.7.2 で追加した「本文に合わせる」モードで、短い本文のカードが同じ行にある別カードの高さに引っ張られて高く表示される不具合を修正しました。
