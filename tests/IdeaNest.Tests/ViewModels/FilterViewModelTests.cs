@@ -403,6 +403,44 @@ public class FilterViewModelTests
         Assert.Equal(0, dirty);
     }
 
+    // ── Callback ordering contract ────────────────────────────────────────────
+
+    [Fact]
+    public void OnMarkDirty_FiresAfterFieldUpdate_SoCallbackCanSyncLatestValue()
+    {
+        // Locks in the contract MainViewModel.OnFilterChanged depends on:
+        // by the time onMarkDirty fires, the new value is already observable
+        // on the FilterViewModel — so the callback can SyncToSettings(...)
+        // and the Settings object will reflect the assignment that triggered it.
+        var settings = new WorkspaceSettings();
+        FilterViewModel? capturedVm = null;
+        capturedVm = new FilterViewModel(
+            onRefreshVisible: () => { },
+            onMarkDirty: () => capturedVm!.SyncToSettings(settings));
+
+        capturedVm.SearchText = "keyword";
+
+        Assert.Equal("keyword", settings.SearchText);
+    }
+
+    [Fact]
+    public void OnMarkDirty_OrderingHoldsForAllFourFields()
+    {
+        var settings = new WorkspaceSettings();
+        FilterViewModel? vm = null;
+        vm = new FilterViewModel(() => { }, () => vm!.SyncToSettings(settings));
+
+        vm.SearchText   = "q";
+        vm.SelectedTag  = "t";
+        vm.SelectedColor = "yellow";
+        vm.ShowArchived = true;
+
+        Assert.Equal("q",      settings.SearchText);
+        Assert.Equal("t",      settings.SelectedTag);
+        Assert.Equal("yellow", settings.SelectedColor);
+        Assert.True(settings.ShowArchived);
+    }
+
     // ── Round-trip ────────────────────────────────────────────────────────────
 
     [Fact]
