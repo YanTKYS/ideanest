@@ -22,17 +22,17 @@ public class StartupCoordinatorTests
     }
 
     [Fact]
-    public void Resolve_OnlyEmptyArgs_ReturnsShowDialog()
+    public void Resolve_OnlyEmptyOrWhitespaceArgs_ReturnsShowDialog()
     {
         var action = StartupCoordinator.Resolve(new[] { "", "   ", null! }, AlwaysExists);
 
         Assert.Equal(StartupActionKind.ShowDialog, action.Kind);
     }
 
-    // ── DirectOpen path ──────────────────────────────────────────────────────
+    // ── DirectOpen: first arg exists ─────────────────────────────────────────
 
     [Fact]
-    public void Resolve_SingleIdeaNestArg_ReturnsDirectOpen()
+    public void Resolve_FirstArgExistsAsIdeaNestFile_ReturnsDirectOpen()
     {
         var action = StartupCoordinator.Resolve(
             new[] { @"C:\notes\ideas.ideanest" }, AlwaysExists);
@@ -42,16 +42,21 @@ public class StartupCoordinatorTests
     }
 
     [Fact]
-    public void Resolve_IdeaNestExtensionIsCaseInsensitive()
+    public void Resolve_FirstArgExistsAsNonIdeaNestFile_ReturnsDirectOpen()
     {
+        // No extension filter — any existing first arg triggers DirectOpen.
+        // This mirrors the old App.OnStartup behavior where File.Exists(args[0])
+        // was the only check, allowing e.g. workspace.json opened by the in-app
+        // "All files (*.*)" option to also be passed on the command line.
         var action = StartupCoordinator.Resolve(
-            new[] { @"C:\notes\IDEAS.IDEANEST" }, AlwaysExists);
+            new[] { @"C:\notes\workspace.json" }, AlwaysExists);
 
         Assert.Equal(StartupActionKind.DirectOpen, action.Kind);
+        Assert.Equal(@"C:\notes\workspace.json", action.Path);
     }
 
     [Fact]
-    public void Resolve_MissingIdeaNestArg_ReturnsShowDialog()
+    public void Resolve_FirstArgDoesNotExist_ReturnsShowDialog()
     {
         var action = StartupCoordinator.Resolve(
             new[] { @"C:\nope.ideanest" }, NeverExists);
@@ -59,38 +64,30 @@ public class StartupCoordinatorTests
         Assert.Equal(StartupActionKind.ShowDialog, action.Kind);
     }
 
-    // ── Non-.ideanest args ───────────────────────────────────────────────────
+    // ── Multiple args: only args[0] is examined ──────────────────────────────
 
     [Fact]
-    public void Resolve_NonIdeaNestArg_ReturnsShowDialog()
+    public void Resolve_MultipleArgs_OnlyFirstArgIsExamined()
     {
-        var action = StartupCoordinator.Resolve(
-            new[] { @"C:\notes\readme.txt" }, AlwaysExists);
+        // Second arg is an existing .ideanest file, but it should be ignored.
+        var present = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            @"C:\notes\second.ideanest",
+        };
 
+        var action = StartupCoordinator.Resolve(
+            new[] { @"C:\notes\missing.ideanest", @"C:\notes\second.ideanest" },
+            present.Contains);
+
+        // First arg does not exist → ShowDialog; second arg is not consulted.
         Assert.Equal(StartupActionKind.ShowDialog, action.Kind);
     }
 
     [Fact]
-    public void Resolve_NonIdeaNestExistingFile_IsNotOpened()
+    public void Resolve_MultipleArgs_FirstArgExists_ReturnsDirectOpenForFirstArg()
     {
         var action = StartupCoordinator.Resolve(
-            new[] { @"C:\binary.exe", @"C:\image.png" }, AlwaysExists);
-
-        Assert.Equal(StartupActionKind.ShowDialog, action.Kind);
-    }
-
-    // ── Multiple args ────────────────────────────────────────────────────────
-
-    [Fact]
-    public void Resolve_MultipleArgs_PicksFirstIdeaNest()
-    {
-        var action = StartupCoordinator.Resolve(
-            new[]
-            {
-                @"C:\notes\skip.txt",
-                @"C:\notes\first.ideanest",
-                @"C:\notes\second.ideanest",
-            },
+            new[] { @"C:\notes\first.ideanest", @"C:\notes\second.ideanest" },
             AlwaysExists);
 
         Assert.Equal(StartupActionKind.DirectOpen, action.Kind);
@@ -98,26 +95,12 @@ public class StartupCoordinatorTests
     }
 
     [Fact]
-    public void Resolve_MultipleArgs_SkipsMissingIdeaNest_PicksNextExisting()
+    public void Resolve_FlagStyleFirstArg_ReturnsShowDialog()
     {
-        var present = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            @"C:\b.ideanest",
-        };
-
+        // A flag like "--some-option" is not a file that exists on disk;
+        // the existence check fails and the dialog is shown.
         var action = StartupCoordinator.Resolve(
-            new[] { @"C:\a.ideanest", @"C:\b.ideanest" },
-            present.Contains);
-
-        Assert.Equal(StartupActionKind.DirectOpen, action.Kind);
-        Assert.Equal(@"C:\b.ideanest", action.Path);
-    }
-
-    [Fact]
-    public void Resolve_AllMissing_ReturnsShowDialog()
-    {
-        var action = StartupCoordinator.Resolve(
-            new[] { @"C:\a.ideanest", @"C:\b.ideanest" },
+            new[] { "--some-option", @"C:\notes\ideas.ideanest" },
             NeverExists);
 
         Assert.Equal(StartupActionKind.ShowDialog, action.Kind);

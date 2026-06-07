@@ -66,9 +66,9 @@
   - `RecentFilesService` — `IEnumerable<string>` → `IReadOnlyList<string>` の純粋関数。
     `Func<string, bool>` を差し込めるため `File.Exists` も置換可能。
   - `StartupCoordinator` — 引数配列 → `StartupAction` レコードの純粋関数。
-    `.ideanest` 拡張子を持ち、かつ存在する最初の引数を `DirectOpen` に選び、
-    なければ `ShowDialog` を返す。Windows のファイル関連付けは `.ideanest` にしか
-    登録されないため、拡張子チェックは安全な絞り込みになる。
+    旧 `App.OnStartup` と同一の判定ルール (`args[0]` のみ、拡張子フィルタなし) を
+    そのまま封じ込める。存在するなら `DirectOpen`、存在しないか引数なしなら `ShowDialog`。
+    将来ルールを変えたい場合はこのクラスだけを修正すれば済む。
   - `StartupViewModel` — `Items` / `Choice` / `SelectedPath` を保持する純粋 ViewModel。
     `RecentFileItem` もここに同居させ、`Views` 名前空間からは依存しない。
 - `AppSettingsService.AddRecentFile` / `RemoveRecentFile` の公開 API は不変のまま、
