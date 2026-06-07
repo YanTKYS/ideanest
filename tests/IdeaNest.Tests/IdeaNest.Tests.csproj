@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>IdeaNest.Tests</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.6" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
+  </ItemGroup>
+
+  <!--
+    Link UI-independent sources from the main IdeaNest project so the test
+    assembly can target net8.0 (and therefore run on any platform). The main
+    project targets net8.0-windows because of WPF, which cannot be referenced
+    from a cross-platform test runner. This mirrors the approach used by
+    tools/IdeaNest.Smoke.
+  -->
+  <ItemGroup>
+    <Compile Include="..\..\src\IdeaNest\Models\AppSettings.cs" Link="Models\AppSettings.cs" />
+    <Compile Include="..\..\src\IdeaNest\Models\Idea.cs" Link="Models\Idea.cs" />
+    <Compile Include="..\..\src\IdeaNest\Models\NoteNestExportOptions.cs" Link="Models\NoteNestExportOptions.cs" />
+    <Compile Include="..\..\src\IdeaNest\Models\Workspace.cs" Link="Models\Workspace.cs" />
+    <Compile Include="..\..\src\IdeaNest\Models\WorkspaceSettings.cs" Link="Models\WorkspaceSettings.cs" />
+    <Compile Include="..\..\src\IdeaNest\Services\MarkdownExportService.cs" Link="Services\MarkdownExportService.cs" />
+    <Compile Include="..\..\src\IdeaNest\Services\NoteNestExportService.cs" Link="Services\NoteNestExportService.cs" />
+    <Compile Include="..\..\src\IdeaNest\Services\WorkspaceService.cs" Link="Services\WorkspaceService.cs" />
+    <Compile Include="..\..\src\IdeaNest\ViewModels\IdeaCardViewModel.cs" Link="ViewModels\IdeaCardViewModel.cs" />
+    <Compile Include="..\..\src\IdeaNest\ViewModels\ViewModelBase.cs" Link="ViewModels\ViewModelBase.cs" />
+  </ItemGroup>
+
+</Project>
