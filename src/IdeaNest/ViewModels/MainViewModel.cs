@@ -35,8 +35,17 @@ public class MainViewModel : ViewModelBase
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
     public ObservableCollection<string> AvailableTags { get; } = new();
 
-    /// <summary>Forwards to TagPanel.VisibleItems (filtered by TagPanel.TagSearch).</summary>
-    public ObservableCollection<TagItemViewModel> TagItems => TagPanel.VisibleItems;
+    /// <summary>
+    /// Full, unfiltered tag list. Used by the tag management window so that
+    /// rename/delete operations always cover every tag regardless of the side
+    /// panel's TagSearch filter.
+    /// </summary>
+    public ObservableCollection<TagItemViewModel> TagItems => TagPanel.AllItems;
+
+    /// <summary>
+    /// TagSearch-filtered tag list. Used by the side panel ListBox.
+    /// </summary>
+    public ObservableCollection<TagItemViewModel> VisibleTagPanelItems => TagPanel.VisibleItems;
 
     public ObservableCollection<SortOptionViewModel> SortOptions { get; } = new()
     {
