@@ -131,6 +131,12 @@ public class CardDisplayViewModel : ViewModelBase
     public void ClearShuffleOrder() => _shuffleOrder.Clear();
 
     /// <summary>
+    /// Read-only view of the current shuffle order. Exposed for inspection
+    /// (e.g. by tests verifying that LoadFromSettings cleared the previous order).
+    /// </summary>
+    public IReadOnlyList<string> ShuffleOrderSnapshot => _shuffleOrder.AsReadOnly();
+
+    /// <summary>
     /// Orders <paramref name="source"/> by the current shuffle order.
     /// allCards is used to lazily seed the order on the first call and to insert
     /// newly-added cards at the front so they are immediately visible.
