@@ -61,6 +61,7 @@ public class WorkspaceServiceTests
 
         var ws = new Workspace
         {
+            Version = "test-schema-version",
             WorkspaceName = "Round Trip",
             Settings = new WorkspaceSettings
             {
@@ -105,7 +106,8 @@ public class WorkspaceServiceTests
         WorkspaceService.Save(path, ws);
         var loaded = WorkspaceService.Load(path);
 
-        // Settings
+        // Workspace top-level
+        Assert.Equal("test-schema-version", loaded.Version);
         Assert.Equal("Round Trip", loaded.WorkspaceName);
         Assert.Equal("alpha", loaded.Settings.SearchText);
         Assert.Equal("UI", loaded.Settings.SelectedTag);
