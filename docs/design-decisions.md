@@ -22,17 +22,17 @@
 4. **一度に 1 〜 2 責務を切り出す** — 大規模リファクタリングは避け、
    既存テストが全件グリーンであることを確認しながら進める。
 
-### 分割済み (v0.8.1)
+### 分割済み (v0.8.1 〜 v0.8.2)
 
 | サブ ViewModel | 担当 | 状態 |
 | --- | --- | --- |
-| `CardDisplayViewModel` | カードサイズ / 高さモード / ソート / シャッフル | ✅ 完了 |
+| `CardDisplayViewModel` | カードサイズ / 高さモード / ソート / シャッフル | ✅ 完了 (v0.8.1) |
+| `FilterViewModel` | `SearchText` / `SelectedTag` / `SelectedColor` / `ShowArchived` / `HasActiveFilter` | ✅ 完了 (v0.8.2) |
 
 ### 今後の候補 (backlog M12 で継続)
 
 | 候補 | 担当 | 備考 |
 | --- | --- | --- |
-| `FilterViewModel` | `SearchText` / `SelectedTag` / `SelectedColor` / `ShowArchived` / `HasActiveFilter` | WPF 非依存になりやすい |
 | `TagPanelViewModel` | `IsTagPanelOpen` / ラベル / `ToggleTagPanelCommand` | 小規模 |
 | `TagManagementViewModel` | `RenameTag` / `DeleteTag` / `AvailableTags` / `TagItems` | `AllCards` 参照あり、要設計 |
 

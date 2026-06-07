@@ -32,6 +32,7 @@
     <Compile Include="..\..\src\IdeaNest\Services\NoteNestExportService.cs" Link="Services\NoteNestExportService.cs" />
     <Compile Include="..\..\src\IdeaNest\Services\WorkspaceService.cs" Link="Services\WorkspaceService.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\CardDisplayViewModel.cs" Link="ViewModels\CardDisplayViewModel.cs" />
+    <Compile Include="..\..\src\IdeaNest\ViewModels\FilterViewModel.cs" Link="ViewModels\FilterViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\IdeaCardViewModel.cs" Link="ViewModels\IdeaCardViewModel.cs" />
     <Compile Include="..\..\src\IdeaNest\ViewModels\ViewModelBase.cs" Link="ViewModels\ViewModelBase.cs" />
   </ItemGroup>
