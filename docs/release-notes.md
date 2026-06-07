@@ -50,12 +50,12 @@ v0.8.1 〜 v0.8.4 と同様、XAML・既存挙動・保存形式は変更なし�
 - **`IdeaNest.Tests.csproj`** に `RecentFilesService.cs` / `StartupCoordinator.cs` /
   `StartupViewModel.cs` の `<Compile Include>` を追加
 
-- **新規テスト 37 件**:
+- **新規テスト 35 件**:
   - `RecentFilesServiceTests.cs` (14 件):
     `Add` の重複排除・先頭移動・大文字小文字不区別・5 件上限・空入力スキップ、
     `Remove` の存在エントリ削除・大文字小文字不区別・該当なし時の不変、
     `FilterExisting` の存在チェック委譲と空白/空文字列除外
-  - `StartupCoordinatorTests.cs` (8 件):
+  - `StartupCoordinatorTests.cs` (9 件):
     引数なし / 空白のみ → `ShowDialog`、存在する先頭引数 → `DirectOpen` (拡張子問わず)、
     存在しない先頭引数 → `ShowDialog`、複数引数時は先頭のみ判定・後続は無視、
     `null` 引数の例外
