@@ -77,8 +77,10 @@ public class MarkdownExportServiceTests
         Assert.Contains("出力件数: 2", md);
         Assert.Contains("## A", md);
         Assert.Contains("## B", md);
-        // One divider per card.
-        var dividerCount = md.Split("\n---\n", StringSplitOptions.None).Length - 1;
+        // One divider ("---") per card — split on the normalized form to be
+        // robust to \r\n (Windows AppendLine) vs \n (Linux).
+        var normalized = md.Replace("\r\n", "\n");
+        var dividerCount = normalized.Split("\n---\n", StringSplitOptions.None).Length - 1;
         Assert.Equal(2, dividerCount);
     }
 
