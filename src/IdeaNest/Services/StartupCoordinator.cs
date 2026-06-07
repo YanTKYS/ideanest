@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace IdeaNest.Services;
 
 public enum StartupActionKind
 {
-    /// <summary>Open the given .ideanest file directly, skipping the start dialog.</summary>
+    /// <summary>Open the given file directly, skipping the start dialog.</summary>
     DirectOpen,
 
     /// <summary>Show the start dialog so the user can pick from recent files or start new.</summary>
@@ -25,13 +26,16 @@ public sealed record StartupAction(StartupActionKind Kind, string? Path)
 /// </summary>
 public static class StartupCoordinator
 {
-    private const string IdeaNestExtension = ".ideanest";
-
     /// <summary>
-    /// Pick the first existing <c>.ideanest</c> argument. Non-<c>.ideanest</c>
-    /// arguments are ignored — Windows file association is registered for
-    /// <c>.ideanest</c> only, so any other input is treated as noise and the
-    /// start dialog is shown instead.
+    /// If the first argument is a path that exists on disk, return
+    /// <see cref="StartupActionKind.DirectOpen"/> for that path.
+    /// Any subsequent arguments are ignored, and non-existent first arguments
+    /// fall through to <see cref="StartupActionKind.ShowDialog"/>.
+    ///
+    /// This mirrors the original <c>App.OnStartup</c> behavior: only
+    /// <c>args[0]</c> is examined, and no extension filtering is applied —
+    /// because the "open with" / file-association path always supplies a
+    /// single argument, and the in-app Open dialog already validates content.
     /// </summary>
     public static StartupAction Resolve(
         IEnumerable<string> args,
@@ -40,12 +44,10 @@ public static class StartupCoordinator
         if (args is null) throw new ArgumentNullException(nameof(args));
         var exists = fileExists ?? File.Exists;
 
-        foreach (var arg in args)
+        var first = args.FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(first) && exists(first))
         {
-            if (string.IsNullOrWhiteSpace(arg)) continue;
-            if (!arg.EndsWith(IdeaNestExtension, StringComparison.OrdinalIgnoreCase)) continue;
-            if (!exists(arg)) continue;
-            return StartupAction.Open(arg);
+            return StartupAction.Open(first);
         }
 
         return StartupAction.Dialog();
