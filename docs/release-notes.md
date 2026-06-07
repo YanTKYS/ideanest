@@ -1,5 +1,47 @@
 # リリースノート
 
+## v0.8.2 (MainViewModel分割 第2段階：FilterViewModel抽出) — 2026-06-07
+
+`MainViewModel` の表示条件管理に関する責務を `FilterViewModel` に切り出しました。
+v0.8.1 と同様、XAML・保存形式・既存コマンドは変更なし。
+
+### 変更内容
+
+- **`FilterViewModel` を新規追加** (`ViewModels/FilterViewModel.cs`)
+  - 担当: 検索文字列 (`SearchText`)、選択中タグ (`SelectedTag`)、
+    選択中色 (`SelectedColor`)、アーカイブ表示 (`ShowArchived`)、
+    アクティブフィルタフラグ (`HasActiveFilter`)
+  - 一括クリア: `ClearFilter()` (各 setter が変更時のみコールバックを発火するため、
+    既にクリア済みの場合は呼び出しが完全な no-op になる)
+  - `WorkspaceSettings` との同期: `SyncToSettings` / `LoadFromSettings`
+  - WPF 依存なし → `IdeaNest.Tests` でクロスプラットフォームにテスト可能
+  - `MainViewModel` はコールバック (`onRefreshVisible` / `onMarkDirty`) を渡して連携
+
+- **`MainViewModel` を更新**
+  - `SearchText` / `SelectedTag` / `SelectedColor` / `ShowArchived` / `HasActiveFilter` を
+    `FilterViewModel` へ移譲
+  - 既存 XAML バインディングへの影響ゼロ:
+    薄い転送プロパティを残し、`Filter.PropertyChanged` を再発火
+  - `SyncWindowSizeBeforeSave`: 個別代入を `Filter.SyncToSettings()` に集約
+  - `ReloadFromWorkspace`: 個別フィールド代入を `Filter.LoadFromSettings()` に集約
+
+- **`IdeaNest.Tests.csproj`** に `FilterViewModel.cs` の `<Compile Include>` を追加
+- **新規テスト 32 件** (`FilterViewModelTests.cs`):
+  デフォルト値、SearchText / SelectedTag / SelectedColor / ShowArchived の
+  変更・同値・null 代入・コールバック発火、HasActiveFilter の各ケース
+  (空白のみは inactive、ShowArchived は影響しない)、ClearFilter の動作、
+  PropertyChanged 通知、SyncToSettings / LoadFromSettings のラウンドトリップ
+
+### 影響範囲
+
+- `src/IdeaNest/ViewModels/FilterViewModel.cs` (新規)
+- `src/IdeaNest/ViewModels/MainViewModel.cs` (内部リファクタリングのみ、公開インターフェース不変)
+- `tests/IdeaNest.Tests/IdeaNest.Tests.csproj` / `FilterViewModelTests.cs` (新規)
+- `src/IdeaNest/IdeaNest.csproj` の `<Version>` を `0.8.1` → `0.8.2` に更新
+- 保存ファイル形式 (`.ideanest`) / XAML / メニュー構成 / 既存コマンド — **変更なし**
+
+---
+
 ## v0.8.1 (MainViewModel分割 第1段階：CardDisplayViewModel抽出) — 2026-06-07
 
 `MainViewModel` のカード表示設定に関する責務を `CardDisplayViewModel` に切り出しました。

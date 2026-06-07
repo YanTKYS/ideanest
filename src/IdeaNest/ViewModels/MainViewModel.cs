@@ -27,13 +27,10 @@ public class MainViewModel : ViewModelBase
     private bool _autoSaveFailed;
     private DateTime? _lastAutoSaveTime;
     private static readonly TimeSpan AutoSaveDelay = TimeSpan.FromSeconds(2);
-    private string _searchText = string.Empty;
-    private string _selectedTag = string.Empty;
-    private string _selectedColor = string.Empty;
-    private bool _showArchived;
     private bool _isTagPanelOpen = false;
 
     public CardDisplayViewModel CardDisplay { get; }
+    public FilterViewModel Filter { get; }
 
     public ObservableCollection<IdeaCardViewModel> AllCards { get; } = new();
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
@@ -121,61 +118,15 @@ public class MainViewModel : ViewModelBase
         }
     }
 
-    public string SearchText
-    {
-        get => _searchText;
-        set
-        {
-            if (SetField(ref _searchText, value))
-            {
-                _workspace.Settings.SearchText = value;
-                RefreshVisible();
-                MarkDirty();
-            }
-        }
-    }
+    // ── Filter state: forward to Filter sub-ViewModel ────────────────────────
+    // Logic (callback invocation, HasActiveFilter) lives in FilterViewModel.
+    // These thin forwards keep existing XAML bindings working without change.
 
-    public string SelectedTag
-    {
-        get => _selectedTag;
-        set
-        {
-            if (SetField(ref _selectedTag, value ?? string.Empty))
-            {
-                _workspace.Settings.SelectedTag = _selectedTag;
-                RefreshVisible();
-                MarkDirty();
-            }
-        }
-    }
-
-    public string SelectedColor
-    {
-        get => _selectedColor;
-        set
-        {
-            if (SetField(ref _selectedColor, value ?? string.Empty))
-            {
-                _workspace.Settings.SelectedColor = _selectedColor;
-                RefreshVisible();
-                MarkDirty();
-            }
-        }
-    }
-
-    public bool ShowArchived
-    {
-        get => _showArchived;
-        set
-        {
-            if (SetField(ref _showArchived, value))
-            {
-                _workspace.Settings.ShowArchived = value;
-                RefreshVisible();
-                MarkDirty();
-            }
-        }
-    }
+    public string SearchText      { get => Filter.SearchText;    set => Filter.SearchText = value; }
+    public string SelectedTag     { get => Filter.SelectedTag;   set => Filter.SelectedTag = value; }
+    public string SelectedColor   { get => Filter.SelectedColor; set => Filter.SelectedColor = value; }
+    public bool   ShowArchived    { get => Filter.ShowArchived;  set => Filter.ShowArchived = value; }
+    public bool   HasActiveFilter => Filter.HasActiveFilter;
 
     public bool IsTagPanelOpen
     {
@@ -252,11 +203,6 @@ public class MainViewModel : ViewModelBase
     public int TotalCount => AllCards.Count;
     public int VisibleCount => VisibleCards.Count;
 
-    public bool HasActiveFilter =>
-        !string.IsNullOrEmpty((SearchText ?? string.Empty).Trim()) ||
-        !string.IsNullOrEmpty((SelectedTag ?? string.Empty).Trim()) ||
-        !string.IsNullOrEmpty((SelectedColor ?? string.Empty).Trim());
-
     public string CountText
     {
         get
@@ -300,10 +246,12 @@ public class MainViewModel : ViewModelBase
     public MainViewModel()
     {
         CardDisplay = new CardDisplayViewModel(RefreshVisible, MarkDirty);
-        // Relay all CardDisplay property-change notifications as if they came from
-        // this ViewModel so that existing XAML bindings (e.g. {Binding CardWidth})
-        // continue to work without any XAML changes.
         CardDisplay.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
+
+        Filter = new FilterViewModel(RefreshVisible, MarkDirty);
+        // Relay all Filter property-change notifications (SearchText, SelectedTag,
+        // SelectedColor, ShowArchived, HasActiveFilter) so existing XAML bindings work.
+        Filter.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
         NewWorkspaceCommand    = new RelayCommand(_ => NewWorkspace());
         OpenCommand            = new RelayCommand(_ => Open());
@@ -442,10 +390,7 @@ public class MainViewModel : ViewModelBase
             _workspace.Settings.WindowWidth = win.ActualWidth;
             _workspace.Settings.WindowHeight = win.ActualHeight;
         }
-        _workspace.Settings.SearchText = SearchText;
-        _workspace.Settings.SelectedTag = SelectedTag;
-        _workspace.Settings.SelectedColor = SelectedColor;
-        _workspace.Settings.ShowArchived = ShowArchived;
+        Filter.SyncToSettings(_workspace.Settings);
         CardDisplay.SyncToSettings(_workspace.Settings);
     }
 
@@ -661,19 +606,13 @@ public class MainViewModel : ViewModelBase
         {
             AllCards.Add(new IdeaCardViewModel(idea));
         }
-        _searchText = _workspace.Settings.SearchText ?? string.Empty;
-        _selectedTag = _workspace.Settings.SelectedTag ?? string.Empty;
-        _selectedColor = _workspace.Settings.SelectedColor ?? string.Empty;
-        _showArchived = _workspace.Settings.ShowArchived;
         _isTagPanelOpen = _workspace.Settings.TagPanelOpen;
-        // Card display settings (size, height mode, sort, shuffle) are owned by
-        // CardDisplayViewModel; its LoadFromSettings fires all derived PropertyChanged
-        // notifications, which are relayed to MainViewModel via the subscribed handler.
+        // Filter state (search, tag, color, archive) and card-display settings
+        // (size, height mode, sort, shuffle) are owned by their sub-ViewModels;
+        // LoadFromSettings fires all derived PropertyChanged notifications, which
+        // are relayed to MainViewModel via the subscribed handlers.
+        Filter.LoadFromSettings(_workspace.Settings);
         CardDisplay.LoadFromSettings(_workspace.Settings);
-        OnPropertyChanged(nameof(SearchText));
-        OnPropertyChanged(nameof(SelectedTag));
-        OnPropertyChanged(nameof(SelectedColor));
-        OnPropertyChanged(nameof(ShowArchived));
         OnPropertyChanged(nameof(IsTagPanelOpen));
         OnPropertyChanged(nameof(TagPanelButtonLabel));
         OnPropertyChanged(nameof(TagPanelButtonTip));
