@@ -1,5 +1,64 @@
 # リリースノート
 
+## v0.8.3 (MainViewModel分割 第3段階：TagPanelViewModel抽出) — 2026-06-07
+
+`MainViewModel` のタグパネル管理に関する責務を `TagPanelViewModel` に切り出しました。
+v0.8.1 / v0.8.2 と同様、XAML・保存形式・既存コマンドは変更なし。
+
+### 変更内容
+
+- **`TagPanelViewModel` を新規追加** (`ViewModels/TagPanelViewModel.cs`)
+  - 担当: タグパネル開閉 (`IsTagPanelOpen`)、ボタンラベル / ツールチップ
+    (`TagPanelButtonLabel` / `TagPanelButtonTip`)、
+    タグ検索欄 (`TagSearch` / `HasTagSearch` / `ClearTagSearch`)、
+    タグ一覧フィルタリング (`VisibleItems` / `SetAllItems`)、
+    タグ選択通知 (`SelectTag`)
+  - `IsTagPanelOpen` 変更時のみ `onMarkDirty` を呼び出す
+    (Settings に保存すべき状態変化だけを通知)
+  - `TagSearch` はローカル表示フィルタ — Settings 非保存・`onMarkDirty` 非呼出
+  - `VisibleItems` は `ObservableCollection<TagItemViewModel>` の安定した参照。
+    内容だけを Clear + Add で更新するため、`MainViewModel.TagItems` プロパティが
+    XAML に安定した参照を提供し続けられる
+  - `WorkspaceSettings` との同期: `SyncToSettings` / `LoadFromSettings`
+  - WPF 依存なし → `IdeaNest.Tests` でクロスプラットフォームにテスト可能
+  - `MainViewModel` はコールバック (`onMarkDirty` / `onTagSelected`) を渡して連携
+
+- **`MainViewModel` を更新**
+  - `IsTagPanelOpen` / `TagPanelButtonLabel` / `TagPanelButtonTip` を
+    `TagPanelViewModel` へ移譲
+  - `TagItems => TagPanel.VisibleItems` で XAML に安定参照を提供
+  - 既存 XAML バインディングへの影響ゼロ:
+    薄い転送プロパティを残し、`TagPanel.PropertyChanged` を再発火
+  - `RefreshTags` の TagItems 更新を `TagPanel.SetAllItems(tagItems)` に集約
+  - `SyncWindowSizeBeforeSave`: 個別代入を `TagPanel.SyncToSettings()` に集約
+  - `ReloadFromWorkspace`: 個別フィールド代入を `TagPanel.LoadFromSettings()` に集約
+  - タグパネル変更時の Settings 同期: `TagPanel` の `onMarkDirty` には
+    `OnTagPanelChanged()` を渡し、`MarkDirty()` の直前に
+    `TagPanel.SyncToSettings(_workspace.Settings)` を実行する。
+    これにより、`MainViewModel.Settings.TagPanelOpen` 等が
+    保存を待たずに即時最新値を反映する
+
+- **`IdeaNest.Tests.csproj`** に `TagItemViewModel.cs` / `TagPanelViewModel.cs` の
+  `<Compile Include>` を追加
+- **新規テスト 33 件** (`TagPanelViewModelTests.cs`):
+  デフォルト値、`IsTagPanelOpen` の変更・同値・コールバック発火、`Toggle`、
+  `TagPanelButtonLabel` / `TagPanelButtonTip` の状態反映、
+  `TagSearch` の変更・null 代入・空白のみ判定、`ClearTagSearch` の動作と no-op 確認、
+  `VisibleItems` のフィルタリング (空検索で全件表示・大文字小文字無視・一致なし)、
+  `SelectTag` のコールバック呼出・null 強制変換、
+  `SyncToSettings` / `LoadFromSettings` のラウンドトリップ、
+  `onMarkDirty` 発火時には既に最新値が観測可能であるという順序契約
+
+### 影響範囲
+
+- `src/IdeaNest/ViewModels/TagPanelViewModel.cs` (新規)
+- `src/IdeaNest/ViewModels/MainViewModel.cs` (内部リファクタリングのみ、公開インターフェース不変)
+- `tests/IdeaNest.Tests/IdeaNest.Tests.csproj` / `TagPanelViewModelTests.cs` (新規)
+- `src/IdeaNest/IdeaNest.csproj` の `<Version>` を `0.8.2` → `0.8.3` に更新
+- 保存ファイル形式 (`.ideanest`) / XAML / メニュー構成 / 既存コマンド — **変更なし**
+
+---
+
 ## v0.8.2 (MainViewModel分割 第2段階：FilterViewModel抽出) — 2026-06-07
 
 `MainViewModel` の表示条件管理に関する責務を `FilterViewModel` に切り出しました。

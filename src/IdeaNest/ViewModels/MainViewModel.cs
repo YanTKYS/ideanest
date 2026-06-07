@@ -27,15 +27,16 @@ public class MainViewModel : ViewModelBase
     private bool _autoSaveFailed;
     private DateTime? _lastAutoSaveTime;
     private static readonly TimeSpan AutoSaveDelay = TimeSpan.FromSeconds(2);
-    private bool _isTagPanelOpen = false;
-
     public CardDisplayViewModel CardDisplay { get; }
     public FilterViewModel Filter { get; }
+    public TagPanelViewModel TagPanel { get; }
 
     public ObservableCollection<IdeaCardViewModel> AllCards { get; } = new();
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
     public ObservableCollection<string> AvailableTags { get; } = new();
-    public ObservableCollection<TagItemViewModel> TagItems { get; } = new();
+
+    /// <summary>Forwards to TagPanel.VisibleItems (filtered by TagPanel.TagSearch).</summary>
+    public ObservableCollection<TagItemViewModel> TagItems => TagPanel.VisibleItems;
 
     public ObservableCollection<SortOptionViewModel> SortOptions { get; } = new()
     {
@@ -128,23 +129,18 @@ public class MainViewModel : ViewModelBase
     public bool   ShowArchived    { get => Filter.ShowArchived;  set => Filter.ShowArchived = value; }
     public bool   HasActiveFilter => Filter.HasActiveFilter;
 
+    // ── Tag panel: forward to TagPanel sub-ViewModel ─────────────────────────
+    // Logic (open state, button labels, tag search + filtering) lives in TagPanelViewModel.
+    // Thin forwards keep existing XAML bindings working without change.
+
     public bool IsTagPanelOpen
     {
-        get => _isTagPanelOpen;
-        set
-        {
-            if (SetField(ref _isTagPanelOpen, value))
-            {
-                _workspace.Settings.TagPanelOpen = value;
-                OnPropertyChanged(nameof(TagPanelButtonLabel));
-                OnPropertyChanged(nameof(TagPanelButtonTip));
-                MarkDirty();
-            }
-        }
+        get => TagPanel.IsTagPanelOpen;
+        set => TagPanel.IsTagPanelOpen = value;
     }
 
-    public string TagPanelButtonLabel => IsTagPanelOpen ? "タグ ◀" : "タグ ▶";
-    public string TagPanelButtonTip   => IsTagPanelOpen ? "タグパネルを閉じる" : "タグパネルを表示";
+    public string TagPanelButtonLabel => TagPanel.TagPanelButtonLabel;
+    public string TagPanelButtonTip   => TagPanel.TagPanelButtonTip;
 
     // ── Card display: forward to CardDisplay sub-ViewModel ────────────────────
     // Logic (dimension calculations, validation, shuffle) lives in CardDisplayViewModel.
@@ -249,9 +245,12 @@ public class MainViewModel : ViewModelBase
         CardDisplay.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
         Filter = new FilterViewModel(RefreshVisible, OnFilterChanged);
-        // Relay all Filter property-change notifications (SearchText, SelectedTag,
-        // SelectedColor, ShowArchived, HasActiveFilter) so existing XAML bindings work.
         Filter.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
+
+        TagPanel = new TagPanelViewModel(OnTagPanelChanged, tag => SelectedTag = tag);
+        // Relay IsTagPanelOpen / TagPanelButtonLabel / TagPanelButtonTip so existing
+        // XAML bindings continue to work via the forwarding properties above.
+        TagPanel.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
         NewWorkspaceCommand    = new RelayCommand(_ => NewWorkspace());
         OpenCommand            = new RelayCommand(_ => Open());
@@ -264,7 +263,7 @@ public class MainViewModel : ViewModelBase
         DeleteIdeaCommand      = new RelayCommand(p => DeleteIdea(p as IdeaCardViewModel));
         TogglePinCommand       = new RelayCommand(p => TogglePin(p as IdeaCardViewModel));
         ToggleArchiveCommand   = new RelayCommand(p => ToggleArchive(p as IdeaCardViewModel));
-        SelectTagCommand       = new RelayCommand(p => SelectedTag = p as string ?? string.Empty);
+        SelectTagCommand       = new RelayCommand(p => TagPanel.SelectTag(p as string ?? string.Empty));
         ClearTagCommand        = new RelayCommand(_ => SelectedTag = string.Empty);
         ClearSearchCommand     = new RelayCommand(_ => SearchText = string.Empty);
         ClearColorCommand         = new RelayCommand(_ => SelectedColor = string.Empty);
@@ -274,7 +273,7 @@ public class MainViewModel : ViewModelBase
         CopyAllMarkdownCommand    = new RelayCommand(_ => CopyAllMarkdown());
         ExportNoteNestCommand     = new RelayCommand(_ => ExportNoteNest());
         CopyNoteNestCommand       = new RelayCommand(_ => CopyNoteNest());
-        ToggleTagPanelCommand     = new RelayCommand(_ => IsTagPanelOpen = !IsTagPanelOpen);
+        ToggleTagPanelCommand     = new RelayCommand(_ => TagPanel.Toggle());
         SetCardSizeCommand        = new RelayCommand(p => CardDisplay.CardSize = p as string ?? "medium");
         SetCardHeightModeCommand  = new RelayCommand(p => CardDisplay.CardHeightMode = p as string ?? "fixed");
         ReshuffleCommand          = new RelayCommand(_ =>
@@ -391,6 +390,7 @@ public class MainViewModel : ViewModelBase
             _workspace.Settings.WindowHeight = win.ActualHeight;
         }
         Filter.SyncToSettings(_workspace.Settings);
+        TagPanel.SyncToSettings(_workspace.Settings);
         CardDisplay.SyncToSettings(_workspace.Settings);
     }
 
@@ -547,16 +547,15 @@ public class MainViewModel : ViewModelBase
         ScheduleAutoSave();
     }
 
-    /// <summary>
-    /// Filter-state change interceptor. Writes the latest filter values into
-    /// _workspace.Settings before marking dirty, so that callers observing
-    /// <see cref="Settings"/> see the current state immediately (not only after
-    /// the next save). This preserves the pre-v0.8.2 behavior where each
-    /// MainViewModel filter setter wrote through to Settings synchronously.
-    /// </summary>
     private void OnFilterChanged()
     {
         Filter.SyncToSettings(_workspace.Settings);
+        MarkDirty();
+    }
+
+    private void OnTagPanelChanged()
+    {
+        TagPanel.SyncToSettings(_workspace.Settings);
         MarkDirty();
     }
 
@@ -619,16 +618,12 @@ public class MainViewModel : ViewModelBase
         {
             AllCards.Add(new IdeaCardViewModel(idea));
         }
-        _isTagPanelOpen = _workspace.Settings.TagPanelOpen;
-        // Filter state (search, tag, color, archive) and card-display settings
-        // (size, height mode, sort, shuffle) are owned by their sub-ViewModels;
-        // LoadFromSettings fires all derived PropertyChanged notifications, which
-        // are relayed to MainViewModel via the subscribed handlers.
+        // Filter, TagPanel, and CardDisplay state are owned by their sub-ViewModels.
+        // LoadFromSettings fires all derived PropertyChanged notifications,
+        // which are relayed to MainViewModel via the subscribed handlers.
         Filter.LoadFromSettings(_workspace.Settings);
+        TagPanel.LoadFromSettings(_workspace.Settings);
         CardDisplay.LoadFromSettings(_workspace.Settings);
-        OnPropertyChanged(nameof(IsTagPanelOpen));
-        OnPropertyChanged(nameof(TagPanelButtonLabel));
-        OnPropertyChanged(nameof(TagPanelButtonTip));
         RefreshTags();
         RefreshVisible();
     }
@@ -644,12 +639,13 @@ public class MainViewModel : ViewModelBase
             .ToList();
 
         AvailableTags.Clear();
-        TagItems.Clear();
+        var tagItems = new List<TagItemViewModel>(tagCounts.Count);
         foreach (var (name, count) in tagCounts)
         {
             AvailableTags.Add(name);
-            TagItems.Add(new TagItemViewModel(name, count));
+            tagItems.Add(new TagItemViewModel(name, count));
         }
+        TagPanel.SetAllItems(tagItems);
     }
 
     private void OpenTagManagement()
