@@ -110,24 +110,15 @@ public class ExportViewModelTests
         try
         {
             var platform = new FakePlatform { SavePathToReturn = path };
-            var vm = Make(
-                visible: new List<IdeaCardViewModel> { Card("hello", "body") },
-                filter: new ExportFilterContext("kw", "UI", "blue", true),
-                platform: platform);
+            var cards = new List<IdeaCardViewModel> { Card("hello", "body") };
+            var ctx = new ExportFilterContext("kw", "UI", "blue", true);
+            var vm = Make(visible: cards, filter: ctx, platform: platform);
 
             vm.ExportMarkdown();
 
-            Assert.True(File.Exists(path));
-            var written = File.ReadAllText(path);
-            // The file content must match what MarkdownExportService.FormatAll
-            // produces — this guards against accidental drift in formatting.
             var expected = MarkdownExportService.FormatAll(
-                new[] { Card("hello", "body") }, "kw", "UI", "blue", true);
-            // CreatedAt/UpdatedAt embed in body — re-format from the same card
-            // instance for an exact match.
-            // Instead, just assert the header is present and the title made it in.
-            Assert.Contains("# IdeaNest", written);
-            Assert.Contains("hello", written);
+                cards, ctx.SearchText, ctx.SelectedTag, ctx.SelectedColor, ctx.ShowArchived);
+            Assert.Equal(expected, File.ReadAllText(path));
             Assert.Empty(platform.ErrorMessages);
         }
         finally
@@ -298,21 +289,17 @@ public class ExportViewModelTests
         var path = Path.Combine(Path.GetTempPath(), $"ideanest-nn-{Guid.NewGuid()}.md");
         try
         {
-            var platform = new FakePlatform
-            {
-                OptionsToReturn = new NoteNestExportOptions(),
-                SavePathToReturn = path,
-            };
-            var vm = Make(
-                visible: new List<IdeaCardViewModel> { Card("hello") },
-                platform: platform);
+            var opts = new NoteNestExportOptions();
+            var platform = new FakePlatform { OptionsToReturn = opts, SavePathToReturn = path };
+            var cards = new List<IdeaCardViewModel> { Card("hello") };
+            var ctx = new ExportFilterContext("", "", "", false);
+            var vm = Make(visible: cards, filter: ctx, platform: platform);
 
             vm.ExportNoteNest();
 
-            Assert.True(File.Exists(path));
-            var written = File.ReadAllText(path);
-            Assert.Contains("IdeaNestから取り込んだアイデア", written);
-            Assert.Contains("hello", written);
+            var expected = NoteNestExportService.FormatAll(
+                cards, ctx.SearchText, ctx.SelectedTag, ctx.SelectedColor, ctx.ShowArchived, opts);
+            Assert.Equal(expected, File.ReadAllText(path));
             Assert.Empty(platform.ErrorMessages);
         }
         finally
@@ -417,11 +404,26 @@ public class ExportViewModelTests
     // ── Snapshot semantics ────────────────────────────────────────────────────
 
     [Fact]
-    public void GetVisibleCards_AndFilterContext_ReadAtInvocationTime_NotConstructionTime()
+    public void GetVisibleCards_ReadAtInvocationTime_NotConstructionTime()
     {
-        // Tests cards/filter values are pulled lazily via the Func, so changes
-        // made after construction propagate to the next export.
         var cards = new List<IdeaCardViewModel> { Card("a") };
+        var platform = new FakePlatform();
+        var vm = new ExportViewModel(
+            getVisibleCards: () => cards,
+            getFilterContext: () => new ExportFilterContext("", "", "", false),
+            platform: platform,
+            showStatus: _ => { });
+
+        cards.Clear(); // simulate filter change emptying the visible set
+        vm.ExportMarkdown();
+
+        Assert.Single(platform.InfoMessages); // zero-card branch took effect
+    }
+
+    [Fact]
+    public void GetFilterContext_ReadAtInvocationTime_NotConstructionTime()
+    {
+        var cards = new List<IdeaCardViewModel> { Card("a"), Card("b") };
         var ctx = new ExportFilterContext("", "", "", false);
         var platform = new FakePlatform();
         var vm = new ExportViewModel(
@@ -430,9 +432,10 @@ public class ExportViewModelTests
             platform: platform,
             showStatus: _ => { });
 
-        cards.Clear(); // simulate filter change emptying the visible set
-        vm.ExportMarkdown();
+        ctx = new ExportFilterContext("kw", "Tag1", "red", true);
+        vm.CopyAllMarkdown();
 
-        Assert.Single(platform.InfoMessages); // zero-card branch took effect
+        var expected = MarkdownExportService.FormatAll(cards, "kw", "Tag1", "red", true);
+        Assert.Equal(expected, platform.ClipboardText);
     }
 }
