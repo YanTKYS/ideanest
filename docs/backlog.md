@@ -41,7 +41,7 @@
 | M8 | 出力オプションのプレビュー | NoteNest 向けエクスポート / コピーのオプションダイアログで、選択結果の冒頭数行をプレビュー表示する。v0.3.1 では未実装 | C |
 | M9 | 重複アイデア検出 | タイトル・本文の類似度 (n-gram など) で近しいカードを候補として提示する。Duplicate フラグの設計や、どの時点で検出を走らせるかの判断が必要 | C |
 | M10 | 出力マーカー文言のカスタマイズ | NoteNest 向けエクスポートの `[NOTE]` / `[TODO]` 文言を自由入力で変更できるようにする。v0.3.1 では固定文字列 | C |
-| M12 | MainViewModelの段階的分割 (継続中) | v0.8.1 で `CardDisplayViewModel`、v0.8.2 で `FilterViewModel`、v0.8.3 で `TagPanelViewModel`、v0.8.4 で `ExportViewModel` + `IExportPlatform` を抽出済み。次の候補: `TagManagementViewModel` (RenameTag / DeleteTag / AvailableTags、AllCards 参照あり要設計)。詳細方針は `design-decisions.md` 参照 | B |
+| M12 | MainViewModelの段階的分割 (継続中) | v0.8.1 で `CardDisplayViewModel`、v0.8.2 で `FilterViewModel`、v0.8.3 で `TagPanelViewModel`、v0.8.4 で `ExportViewModel` + `IExportPlatform`、v0.8.5 で `RecentFilesService` + `StartupCoordinator` + `StartupViewModel` を抽出済み。次の候補: `TagManagementViewModel` (RenameTag / DeleteTag / AvailableTags、AllCards 参照あり要設計)。詳細方針は `design-decisions.md` 参照 | B |
 | M13 | カード一覧の Masonry レイアウト | v0.7.3 の `VerticalAlignment="Top"` 修正後も、行内では各行の最も高いカード分のスペースが確保され、短文カードの直下に余白が残る。Google Keep のように次行のカードを詰めて配置するにはカスタム `Panel` (列ごとに最短列に追加するアルゴリズム) の実装が必要。`WrapPanel` を置き換えるため影響範囲が広く、優先度は中 | B |
 
 ---

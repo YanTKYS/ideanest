@@ -8,8 +8,6 @@ namespace IdeaNest.Services;
 
 public static class AppSettingsService
 {
-    private const int MaxRecentFiles = 5;
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
@@ -55,12 +53,7 @@ public static class AppSettingsService
     {
         if (string.IsNullOrWhiteSpace(path)) return;
         var settings = Load();
-        settings.RecentFiles = new System.Collections.Generic.List<string>(
-            new[] { path }.Concat(
-                settings.RecentFiles.Where(p =>
-                    !string.Equals(p, path, StringComparison.OrdinalIgnoreCase))));
-        if (settings.RecentFiles.Count > MaxRecentFiles)
-            settings.RecentFiles = settings.RecentFiles.Take(MaxRecentFiles).ToList();
+        settings.RecentFiles = RecentFilesService.Add(settings.RecentFiles, path).ToList();
         Save(settings);
     }
 
@@ -68,9 +61,10 @@ public static class AppSettingsService
     {
         if (string.IsNullOrWhiteSpace(path)) return;
         var settings = Load();
-        var removed = settings.RecentFiles.RemoveAll(p =>
-            string.Equals(p, path, StringComparison.OrdinalIgnoreCase));
-        if (removed > 0) Save(settings);
+        var updated = RecentFilesService.Remove(settings.RecentFiles, path).ToList();
+        if (updated.Count == settings.RecentFiles.Count) return;
+        settings.RecentFiles = updated;
+        Save(settings);
     }
 
     public static void ClearRecentFiles()

@@ -39,7 +39,7 @@ v0.1.2 で画面の見た目を以下のように整理しました。
 外部 UI ライブラリ (MahApps.Metro / Material Design / Fluent UI 等) や
 WebView2 は導入せず、WPF 標準機能の範囲で実現しています。
 
-## 主な機能 (v0.8.4)
+## 主な機能 (v0.8.5)
 
 - アイデアカードの追加・編集・削除
 - カード型の一覧表示 (ピン留めが上に来る) — カード操作ボタンはホバー時のみ表示
@@ -138,7 +138,7 @@ dotnet run --project src/IdeaNest/IdeaNest.csproj
 > dotnet run --project tools/IdeaNest.Smoke
 > ```
 
-### Unit テストの実行 (v0.8.0 で追加 / v0.8.1・v0.8.2・v0.8.3・v0.8.4 で ViewModel テストを追加)
+### Unit テストの実行 (v0.8.0 で追加 / v0.8.1・v0.8.2・v0.8.3・v0.8.4・v0.8.5 で ViewModel / Service テストを追加)
 
 `tests/IdeaNest.Tests` に xUnit ベースの単体テストプロジェクトがあります。
 主要な Service / ViewModel ロジック (タグ正規化・ワークスペース保存読込・

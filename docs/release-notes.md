@@ -1,5 +1,86 @@
 # リリースノート
 
+## v0.8.5 (起動導線分割：RecentFilesService / StartupCoordinator / StartupViewModel 抽出) — 2026-06-07
+
+起動時の責務 (コマンドライン引数の解決・最近使ったファイル一覧・スタートダイアログ) を
+ロジックとUIに分離しました。
+v0.8.1 〜 v0.8.4 と同様、XAML・既存挙動・保存形式は変更なし。
+
+### 変更内容
+
+- **`RecentFilesService` を新規追加** (`Services/RecentFilesService.cs`)
+  - 担当: 最近使ったファイル一覧に対する純粋な追加 (`Add`) / 削除 (`Remove`) /
+    存在ファイルのフィルタ (`FilterExisting`)
+  - `MaxRecentFiles = 5` を定数として保持
+  - 永続化 (`settings.json`) は従来どおり `AppSettingsService` 側、本クラスは
+    純粋なリスト操作のみで、`Func<string, bool>` 注入により I/O 不要で単体テスト可能
+
+- **`StartupCoordinator` を新規追加** (`Services/StartupCoordinator.cs`)
+  - 担当: 起動引数の解析 → `StartupAction` (`DirectOpen` / `ShowDialog`) の決定
+  - `.ideanest` 拡張子を持ち、かつ存在するファイルのうち最初のものを `DirectOpen` 対象に選ぶ
+    (該当なしの場合は `ShowDialog`)
+  - 複数引数がある場合は先頭から走査して最初の `.ideanest` を採用
+  - 完全に純粋関数で、`Func<string, bool>` を差し込むことで存在チェックも差し替え可能
+
+- **`StartupViewModel` を新規追加** (`ViewModels/StartupViewModel.cs`)
+  - 担当: スタートダイアログの状態 (`Items` / `Choice` / `SelectedPath`)、
+    `ChooseNew` / `Cancel` / `TryChooseOpen` / `RemoveItem` / `ClearItems`
+  - `RecentFileItem` (FullPath / DisplayName) もここに移動
+  - 構築時に `RecentFilesService.FilterExisting` を通して存在しない履歴を除外
+  - WPF 非依存。`IdeaNest.Tests` でクロスプラットフォームに単体テストできる
+
+- **`AppSettingsService` を更新**
+  - `AddRecentFile` / `RemoveRecentFile` の内部実装を `RecentFilesService` に委譲
+    (公開 API は不変、他の呼出側に変更なし)
+  - `MaxRecentFiles` 定数は `RecentFilesService` に移動
+
+- **`App.xaml.cs` (`App.OnStartup`) を更新**
+  - 引数解決を `StartupCoordinator.Resolve` に委譲
+  - スタートダイアログ周りを `StartupViewModel` 経由に整理
+  - 既存挙動 (引数オープン → 最近使ったファイル追加、不正ファイル時の MessageBox、
+    ダイアログのキャンセル → 終了、新規開始 → 空ワークスペース) は維持
+  - 旧 `args[0]` の存在のみ判定する経路を `.ideanest` 拡張子チェック付きに整理。
+    Windows ファイル関連付けは `.ideanest` にしか登録されないため
+    実運用の挙動には影響しない
+
+- **`Views/StartupWindow.xaml.cs` を更新**
+  - コンストラクタを `StartupWindow(StartupViewModel vm)` に変更
+  - 公開プロパティ (`ChoseNew` / `SelectedPath`) を削除し、結果は VM 経由で参照
+  - UI/XAML は変更なし
+
+- **`IdeaNest.Tests.csproj`** に `RecentFilesService.cs` / `StartupCoordinator.cs` /
+  `StartupViewModel.cs` の `<Compile Include>` を追加
+
+- **新規テスト 37 件**:
+  - `RecentFilesServiceTests.cs` (14 件):
+    `Add` の重複排除・先頭移動・大文字小文字不区別・5 件上限・空入力スキップ、
+    `Remove` の存在エントリ削除・大文字小文字不区別・該当なし時の不変、
+    `FilterExisting` の存在チェック委譲と空白/空文字列除外
+  - `StartupCoordinatorTests.cs` (11 件):
+    引数なし → `ShowDialog`、`.ideanest` 引数 → `DirectOpen`、
+    `.ideanest` 以外の引数は `ShowDialog`、複数引数では最初の `.ideanest` を選択、
+    存在しない `.ideanest` はスキップして次を見る、`null` 引数の例外
+  - `StartupViewModelTests.cs` (12 件):
+    存在ファイルのみ `Items` に積まれる、初期 `Choice` は `Cancel`、
+    `ChooseNew` / `Cancel` / `TryChooseOpen` (成功/失敗) / `RemoveItem` / `ClearItems`、
+    `null` リストの例外
+
+### 影響範囲
+
+- `src/IdeaNest/Services/RecentFilesService.cs` (新規)
+- `src/IdeaNest/Services/StartupCoordinator.cs` (新規)
+- `src/IdeaNest/ViewModels/StartupViewModel.cs` (新規、`RecentFileItem` を移動)
+- `src/IdeaNest/Services/AppSettingsService.cs` (内部委譲化、公開 API は不変)
+- `src/IdeaNest/App.xaml.cs` (起動ロジック整理)
+- `src/IdeaNest/Views/StartupWindow.xaml.cs` (VM 受け取りに変更、XAML は不変)
+- `tests/IdeaNest.Tests/IdeaNest.Tests.csproj` / `Services/RecentFilesServiceTests.cs`
+  / `Services/StartupCoordinatorTests.cs` / `ViewModels/StartupViewModelTests.cs` (新規)
+- `src/IdeaNest/IdeaNest.csproj` の `<Version>` を `0.8.4` → `0.8.5` に更新
+- 保存ファイル形式 (`.ideanest`) / `settings.json` 形式 / XAML / メニュー構成 /
+  既存コマンド / 通常起動時のスタートダイアログ表示 / 最近使ったファイルの保存先 — **変更なし**
+
+---
+
 ## v0.8.4 (MainViewModel分割 第4段階：ExportViewModel抽出) — 2026-06-07
 
 `MainViewModel` の外部出力 (Markdown / NoteNest エクスポート、クリップボードコピー) に関する

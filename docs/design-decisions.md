@@ -22,14 +22,15 @@
 4. **一度に 1 〜 2 責務を切り出す** — 大規模リファクタリングは避け、
    既存テストが全件グリーンであることを確認しながら進める。
 
-### 分割済み (v0.8.1 〜 v0.8.4)
+### 分割済み (v0.8.1 〜 v0.8.5)
 
-| サブ ViewModel | 担当 | 状態 |
+| サブ ViewModel / Service | 担当 | 状態 |
 | --- | --- | --- |
 | `CardDisplayViewModel` | カードサイズ / 高さモード / ソート / シャッフル | ✅ 完了 (v0.8.1) |
 | `FilterViewModel` | `SearchText` / `SelectedTag` / `SelectedColor` / `ShowArchived` / `HasActiveFilter` | ✅ 完了 (v0.8.2) |
 | `TagPanelViewModel` | `IsTagPanelOpen` / ボタンラベル・ツールチップ / `TagSearch` / `VisibleItems` / `SelectTag` | ✅ 完了 (v0.8.3) |
 | `ExportViewModel` + `IExportPlatform` | Markdown / NoteNest エクスポート、クリップボードコピー (各 5 メソッド) | ✅ 完了 (v0.8.4) |
+| `RecentFilesService` + `StartupCoordinator` + `StartupViewModel` | 最近使ったファイル一覧の純粋ロジック / 起動引数解決 / スタートダイアログ状態 | ✅ 完了 (v0.8.5) |
 
 ### 今後の候補 (backlog M12 で継続)
 
@@ -52,6 +53,32 @@
   `SaveFileDialog` のフィルタ文字列・既定拡張子といった UI 詳細を MainViewModel から退避。
   これらの WPF 詳細は今後 UI を別 OS に移植する際の単一の隔離ポイントになる。
 - DI コンテナ導入は引き続き対象外。インスタンスは MainViewModel が `new` で生成する。
+
+### v0.8.5 で起動導線を 3 つに分けた理由
+
+- 起動処理には性質の異なる責務が混在していた。
+  - **純粋ロジック**: 「最近使ったファイル」の追加 / 重複排除 / 5 件上限 / 存在ファイル絞り込み
+  - **判断**: 起動引数を見て「直接開く」か「ダイアログを出す」かを決める
+  - **UI 状態**: スタートダイアログ上の選択 (`New` / `Open` / `Cancel`) と選ばれたパス
+- これらを 1 つの ViewModel に束ねると、純粋ロジックを単体テストするのに WPF 依存や
+  ファイルシステム依存が混ざってしまう。
+- 役割で 3 つに分けた:
+  - `RecentFilesService` — `IEnumerable<string>` → `IReadOnlyList<string>` の純粋関数。
+    `Func<string, bool>` を差し込めるため `File.Exists` も置換可能。
+  - `StartupCoordinator` — 引数配列 → `StartupAction` レコードの純粋関数。
+    `.ideanest` 拡張子を持ち、かつ存在する最初の引数を `DirectOpen` に選び、
+    なければ `ShowDialog` を返す。Windows のファイル関連付けは `.ideanest` にしか
+    登録されないため、拡張子チェックは安全な絞り込みになる。
+  - `StartupViewModel` — `Items` / `Choice` / `SelectedPath` を保持する純粋 ViewModel。
+    `RecentFileItem` もここに同居させ、`Views` 名前空間からは依存しない。
+- `AppSettingsService.AddRecentFile` / `RemoveRecentFile` の公開 API は不変のまま、
+  内部だけ `RecentFilesService` に委譲。これにより呼出側 (`MainViewModel.Open` /
+  `SaveAs`、`App.OnStartup`) の変更ゼロでロジックだけテスト可能になった。
+- `StartupWindow` は引き続きコードビハインドで動かす。MVVM 純粋化のためだけに
+  ICommand バインディングへ書き換えるのはコスト過大で、ダイアログのライフサイクル
+  (ShowDialog / DialogResult / Close) を VM 側に持たせるのも不自然。XAML は無変更で残す。
+- DI コンテナ導入はここでも対象外。`StartupViewModel` は `App.OnStartup` 内で
+  `new` され、必要なら `Func<string, bool>` を差し替えるテスト経路のみを開けている。
 
 ## なぜカード型 UI にしたか
 
