@@ -1,5 +1,54 @@
 # リリースノート
 
+## v0.8.7 (リファクタ後回帰確認・小修正) — 2026-06-07
+
+v0.8.1〜v0.8.6 の MainViewModel 段階的分割を受けて、**新機能の追加や大規模な設計変更は行わず**、
+回帰確認と軽微な不整合の修正のみを実施しました。
+
+### 確認結果
+
+以下を目視・コードレビューで確認し、回帰がないことを検証しました。
+
+- **起動導線**: 通常起動 (スタートダイアログ) / ダブルクリック起動 / コマンドライン引数起動の
+  いずれも `StartupCoordinator` / `StartupViewModel` 経由で旧挙動が維持されている
+- **保存・自動保存**: `SaveStateViewModel` への移譲後も、手動保存・名前を付けて保存・
+  自動保存・保存失敗時の状態遷移・終了時確認が正しく機能している
+- **カード操作**: 追加・編集・削除・プレビュー・ピン留め・アーカイブ・前後移動が正常
+- **フィルタ・タグパネル**: 検索・タグ・色フィルタ・アーカイブ表示・空状態表示・
+  タグパネル開閉・タグ検索が正常
+- **並び順・シャッフル**: 各並び順・再シャッフル・ピン留め上部固定が正常
+- **エクスポート・コピー**: Markdown / NoteNest 向けの出力形式が変わっていない
+- **その他**: チュートリアル画面・バージョン表示・ドキュメント記載が整合している
+
+### 修正内容
+
+- **`MainViewModel.SaveTo` の catch ブロックの不要な通知を削除**
+  - 手動保存が失敗した際、`OnPropertyChanged(nameof(SaveStatusText))` を呼んでいたが、
+    `SaveState` の状態は変化しておらず `SaveStatusText` は変化しない。コメントには
+    「SaveStatusText は手動保存失敗時に変化しない」と明記されており、コードと矛盾していた
+  - 当該 `OnPropertyChanged` 呼び出しを削除。MessageBox 表示のみで対応する従来の意図を明確化
+
+- **リリースノート v0.8.4 のテスト件数を修正**
+  - "22件" と記載していた `ExportViewModelTests` のテスト数が、
+    v0.8.4 レビュー時のスナップショットテスト分割 (1 → 2 件) により実際は 23 件になっていた
+
+### 変更なし
+
+- 保存ファイル形式 (`.ideanest`) / `settings.json` 形式 / XAML / メニュー構成 /
+  キーボードショートカット / 自動保存挙動 / エクスポート出力形式 — **すべて変更なし**
+- 新しい ViewModel の追加・MainViewModel の大規模分割 — **実施しない**
+- 単体テストの追加 — **なし** (全 260 件引き続き Pass)
+
+### 影響範囲
+
+- `src/IdeaNest/ViewModels/MainViewModel.cs`
+  (SaveTo catch ブロックの冗長 `OnPropertyChanged` を削除)
+- `docs/release-notes.md`
+  (v0.8.4 テスト件数を 22 → 23 に訂正)
+- `src/IdeaNest/IdeaNest.csproj` の `<Version>` を `0.8.6` → `0.8.7` に更新
+
+---
+
 ## v0.8.6 (保存状態分割：SaveStateViewModel 抽出) — 2026-06-07
 
 `MainViewModel` に残っていた保存状態・自動保存まわりの責務を `SaveStateViewModel` に切り出しました。
@@ -170,7 +219,7 @@ v0.8.1 〜 v0.8.3 と同様、XAML・保存形式・既存メニュー・ショ�
 
 - **`IdeaNest.Tests.csproj`** に `ExportViewModel.cs` / `IExportPlatform.cs` の
   `<Compile Include>` を追加
-- **新規テスト 22 件** (`ExportViewModelTests.cs`):
+- **新規テスト 23 件** (`ExportViewModelTests.cs`):
   各エクスポート / コピーメソッドについて、
   - 0 件時にインフォメーションが出てクリップボード・ファイル操作が走らないこと
   - 保存パス / オプションダイアログのキャンセル時に書き込みが行われないこと
