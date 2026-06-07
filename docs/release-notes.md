@@ -1,5 +1,68 @@
 # リリースノート
 
+## v0.8.4 (MainViewModel分割 第4段階：ExportViewModel抽出) — 2026-06-07
+
+`MainViewModel` の外部出力 (Markdown / NoteNest エクスポート、クリップボードコピー) に関する
+責務を `ExportViewModel` に切り出しました。
+v0.8.1 〜 v0.8.3 と同様、XAML・保存形式・既存メニュー・ショートカット・出力形式は変更なし。
+
+### 変更内容
+
+- **`ExportViewModel` を新規追加** (`ViewModels/ExportViewModel.cs`)
+  - 担当: Markdown 風エクスポート (`ExportMarkdown`)、
+    NoteNest 向けエクスポート (`ExportNoteNest`)、
+    単一カードの Markdown コピー (`CopyCardMarkdown`)、
+    表示中カード全件の Markdown コピー (`CopyAllMarkdown`)、
+    表示中カード全件の NoteNest 向けコピー (`CopyNoteNest`)
+  - 出力対象 0 件のチェック、`MarkdownExportService` / `NoteNestExportService` への委譲、
+    クリップボード / ファイル書き込みの例外ハンドリングを集約
+  - 出力フォーマット自体は既存サービスをそのまま呼び出すため変化なし
+
+- **`IExportPlatform` インターフェースを新規追加** (`ViewModels/IExportPlatform.cs`)
+  - WPF 依存処理 (SaveFileDialog / MessageBox / Clipboard / NoteNest オプションダイアログ) を
+    `PromptSaveFilePath` / `PromptNoteNestOptions` / `SetClipboard` /
+    `ShowInformation` / `ShowError` の 5 つのメソッドとして抽象化
+  - これにより `ExportViewModel` 本体は WPF 非依存となり、
+    `IdeaNest.Tests` でクロスプラットフォームに単体テストできる
+
+- **`WpfExportPlatform` を新規追加** (`ViewModels/WpfExportPlatform.cs`)
+  - `IExportPlatform` の WPF 実装。`SaveFileDialog` / `NoteNestExportOptionsWindow` /
+    `Clipboard` / `MessageBox` を MainViewModel から切り出して内包
+
+- **`MainViewModel` を更新**
+  - `ExportMarkdown` / `CopyCardMarkdown` / `CopyAllMarkdown` / `ExportNoteNest` /
+    `CopyNoteNest` の各 private メソッドを削除し、`Export.XxxMethod()` への委譲に置換
+  - `ExportMarkdownCommand` 等の既存 `ICommand` プロパティは維持
+    (XAML バインディングへの影響ゼロ)
+  - PreviewIdeaWindow への `onCopyMarkdown` コールバックも `Export.CopyCardMarkdown` に切替
+  - `Export` プロパティとしてサブ ViewModel を公開し、
+    `getVisibleCards` / `getFilterContext` ラムダ経由で表示中カード・フィルタ状態を遅延取得
+
+- **`IdeaNest.Tests.csproj`** に `ExportViewModel.cs` / `IExportPlatform.cs` の
+  `<Compile Include>` を追加
+- **新規テスト 22 件** (`ExportViewModelTests.cs`):
+  各エクスポート / コピーメソッドについて、
+  - 0 件時にインフォメーションが出てクリップボード・ファイル操作が走らないこと
+  - 保存パス / オプションダイアログのキャンセル時に書き込みが行われないこと
+  - 表示中カードと FilterContext が `MarkdownExportService` /
+    `NoteNestExportService` にそのまま渡され、出力が既存サービスの結果と一致すること
+  - クリップボード例外時にエラーダイアログが出てステータスメッセージは更新されないこと
+  - 既定ファイル名が `ideanest_export_` / `ideanest_notenest_` プレフィックスと
+    `.md` 拡張子を持つこと
+  - `getVisibleCards` / `getFilterContext` が呼出時点で評価される (遅延読み出し) こと
+
+### 影響範囲
+
+- `src/IdeaNest/ViewModels/ExportViewModel.cs` (新規)
+- `src/IdeaNest/ViewModels/IExportPlatform.cs` (新規)
+- `src/IdeaNest/ViewModels/WpfExportPlatform.cs` (新規)
+- `src/IdeaNest/ViewModels/MainViewModel.cs` (内部リファクタリングのみ、公開コマンドの挙動不変)
+- `tests/IdeaNest.Tests/IdeaNest.Tests.csproj` / `ExportViewModelTests.cs` (新規)
+- `src/IdeaNest/IdeaNest.csproj` の `<Version>` を `0.8.3` → `0.8.4` に更新
+- 保存ファイル形式 (`.ideanest`) / XAML / メニュー構成 / 既存コマンド / 出力形式 — **変更なし**
+
+---
+
 ## v0.8.3 (MainViewModel分割 第3段階：TagPanelViewModel抽出) — 2026-06-07
 
 `MainViewModel` のタグパネル管理に関する責務を `TagPanelViewModel` に切り出しました。

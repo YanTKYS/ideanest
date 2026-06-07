@@ -22,19 +22,36 @@
 4. **一度に 1 〜 2 責務を切り出す** — 大規模リファクタリングは避け、
    既存テストが全件グリーンであることを確認しながら進める。
 
-### 分割済み (v0.8.1 〜 v0.8.3)
+### 分割済み (v0.8.1 〜 v0.8.4)
 
 | サブ ViewModel | 担当 | 状態 |
 | --- | --- | --- |
 | `CardDisplayViewModel` | カードサイズ / 高さモード / ソート / シャッフル | ✅ 完了 (v0.8.1) |
 | `FilterViewModel` | `SearchText` / `SelectedTag` / `SelectedColor` / `ShowArchived` / `HasActiveFilter` | ✅ 完了 (v0.8.2) |
 | `TagPanelViewModel` | `IsTagPanelOpen` / ボタンラベル・ツールチップ / `TagSearch` / `VisibleItems` / `SelectTag` | ✅ 完了 (v0.8.3) |
+| `ExportViewModel` + `IExportPlatform` | Markdown / NoteNest エクスポート、クリップボードコピー (各 5 メソッド) | ✅ 完了 (v0.8.4) |
 
 ### 今後の候補 (backlog M12 で継続)
 
 | 候補 | 担当 | 備考 |
 | --- | --- | --- |
 | `TagManagementViewModel` | `RenameTag` / `DeleteTag` / `AvailableTags` | `AllCards` 参照あり、要設計 |
+
+### v0.8.4 で `IExportPlatform` インターフェースを導入した理由
+
+- v0.8.1 〜 v0.8.3 のサブ ViewModel はコールバック (`Action onMarkDirty` 等) で
+  WPF 依存を逃がしてきた。
+- 一方で v0.8.4 のエクスポート責務には WPF タッチポイントが 5 つある
+  (`SaveFileDialog` / オプションダイアログ / `Clipboard` / 情報ダイアログ / エラーダイアログ)。
+  これらをすべて個別の `Func` / `Action` で受けると、コンストラクタが煩雑になり
+  意味のあるグルーピングも失われる。
+- そこで `IExportPlatform` という 5 メソッドの薄いインターフェースに集約した。
+  `ExportViewModel` 本体は WPF 非依存のまま、テスト時はモックを差し替えるだけで
+  ファイル書き込み / クリップボード / ダイアログのすべてを観測できる。
+- 本体 (WPF) 側は `WpfExportPlatform` 1 ファイルにまとめ、
+  `SaveFileDialog` のフィルタ文字列・既定拡張子といった UI 詳細を MainViewModel から退避。
+  これらの WPF 詳細は今後 UI を別 OS に移植する際の単一の隔離ポイントになる。
+- DI コンテナ導入は引き続き対象外。インスタンスは MainViewModel が `new` で生成する。
 
 ## なぜカード型 UI にしたか
 

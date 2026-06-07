@@ -30,6 +30,7 @@ public class MainViewModel : ViewModelBase
     public CardDisplayViewModel CardDisplay { get; }
     public FilterViewModel Filter { get; }
     public TagPanelViewModel TagPanel { get; }
+    public ExportViewModel Export { get; }
 
     public ObservableCollection<IdeaCardViewModel> AllCards { get; } = new();
     public ObservableCollection<IdeaCardViewModel> VisibleCards { get; } = new();
@@ -261,6 +262,13 @@ public class MainViewModel : ViewModelBase
         // XAML bindings continue to work via the forwarding properties above.
         TagPanel.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
+        Export = new ExportViewModel(
+            getVisibleCards: () => VisibleCards,
+            getFilterContext: () => new ExportFilterContext(
+                SearchText, SelectedTag, SelectedColor, ShowArchived),
+            platform: new WpfExportPlatform(),
+            showStatus: ShowStatus);
+
         NewWorkspaceCommand    = new RelayCommand(_ => NewWorkspace());
         OpenCommand            = new RelayCommand(_ => Open());
         SaveCommand            = new RelayCommand(_ => Save());
@@ -277,11 +285,11 @@ public class MainViewModel : ViewModelBase
         ClearSearchCommand     = new RelayCommand(_ => SearchText = string.Empty);
         ClearColorCommand         = new RelayCommand(_ => SelectedColor = string.Empty);
         ManageTagsCommand         = new RelayCommand(_ => OpenTagManagement());
-        ExportMarkdownCommand     = new RelayCommand(_ => ExportMarkdown());
-        CopyCardMarkdownCommand   = new RelayCommand(p => CopyCardMarkdown(p as IdeaCardViewModel));
-        CopyAllMarkdownCommand    = new RelayCommand(_ => CopyAllMarkdown());
-        ExportNoteNestCommand     = new RelayCommand(_ => ExportNoteNest());
-        CopyNoteNestCommand       = new RelayCommand(_ => CopyNoteNest());
+        ExportMarkdownCommand     = new RelayCommand(_ => Export.ExportMarkdown());
+        CopyCardMarkdownCommand   = new RelayCommand(p => Export.CopyCardMarkdown(p as IdeaCardViewModel));
+        CopyAllMarkdownCommand    = new RelayCommand(_ => Export.CopyAllMarkdown());
+        ExportNoteNestCommand     = new RelayCommand(_ => Export.ExportNoteNest());
+        CopyNoteNestCommand       = new RelayCommand(_ => Export.CopyNoteNest());
         ToggleTagPanelCommand     = new RelayCommand(_ => TagPanel.Toggle());
         SetCardSizeCommand        = new RelayCommand(p => CardDisplay.CardSize = p as string ?? "medium");
         SetCardHeightModeCommand  = new RelayCommand(p => CardDisplay.CardHeightMode = p as string ?? "fixed");
@@ -476,7 +484,7 @@ public class MainViewModel : ViewModelBase
             onEdit: c => EditIdea(c, dlg),
             onTogglePin: c => TogglePin(c),
             onToggleArchive: c => ToggleArchive(c),
-            onCopyMarkdown: c => CopyCardMarkdown(c))
+            onCopyMarkdown: c => Export.CopyCardMarkdown(c))
         {
             Owner = Application.Current?.MainWindow,
         };
@@ -664,179 +672,6 @@ public class MainViewModel : ViewModelBase
             Owner = Application.Current?.MainWindow,
         };
         dlg.ShowDialog();
-    }
-
-    private void ExportMarkdown()
-    {
-        if (VisibleCards.Count == 0)
-        {
-            MessageBox.Show(
-                "エクスポート対象のカードがありません。",
-                "IdeaNest",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-            return;
-        }
-
-        var defaultName = $"ideanest_export_{DateTime.Now:yyyyMMdd_HHmm}.md";
-        var dlg = new Microsoft.Win32.SaveFileDialog
-        {
-            Filter = "Markdown files (*.md)|*.md|Text files (*.txt)|*.txt",
-            DefaultExt = ".md",
-            FileName = defaultName,
-        };
-        if (dlg.ShowDialog() != true) return;
-
-        try
-        {
-            Services.MarkdownExportService.Export(
-                dlg.FileName,
-                VisibleCards,
-                SearchText,
-                SelectedTag,
-                SelectedColor,
-                ShowArchived);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                $"エクスポートに失敗しました:\n{ex.Message}",
-                "IdeaNest",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-    }
-
-    private void CopyCardMarkdown(IdeaCardViewModel? card)
-    {
-        if (card == null) return;
-        var text = MarkdownExportService.FormatCard(card);
-        try
-        {
-            Clipboard.SetText(text);
-            ShowStatus("カードをコピーしました。");
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                $"クリップボードへのコピーに失敗しました:\n{ex.Message}",
-                "IdeaNest",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-    }
-
-    private void CopyAllMarkdown()
-    {
-        if (VisibleCards.Count == 0)
-        {
-            MessageBox.Show(
-                "コピー対象のカードがありません。",
-                "IdeaNest",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-            return;
-        }
-        var text = MarkdownExportService.FormatAll(
-            VisibleCards, SearchText, SelectedTag, SelectedColor, ShowArchived);
-        try
-        {
-            Clipboard.SetText(text);
-            ShowStatus($"表示中の{VisibleCards.Count}件をコピーしました。");
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                $"クリップボードへのコピーに失敗しました:\n{ex.Message}",
-                "IdeaNest",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-    }
-
-    private void ExportNoteNest()
-    {
-        if (VisibleCards.Count == 0)
-        {
-            MessageBox.Show(
-                "NoteNest向けに出力するカードがありません。",
-                "IdeaNest",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-            return;
-        }
-
-        var optsDlg = new Views.NoteNestExportOptionsWindow
-        {
-            Owner = Application.Current?.MainWindow,
-        };
-        if (optsDlg.ShowDialog() != true) return;
-        var options = optsDlg.Options!;
-
-        var defaultName = $"ideanest_notenest_{DateTime.Now:yyyyMMdd_HHmm}.md";
-        var dlg = new Microsoft.Win32.SaveFileDialog
-        {
-            Filter = "Markdown files (*.md)|*.md|Text files (*.txt)|*.txt",
-            DefaultExt = ".md",
-            FileName = defaultName,
-        };
-        if (dlg.ShowDialog() != true) return;
-
-        try
-        {
-            NoteNestExportService.Export(
-                dlg.FileName,
-                VisibleCards,
-                SearchText,
-                SelectedTag,
-                SelectedColor,
-                ShowArchived,
-                options);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                $"エクスポートに失敗しました:\n{ex.Message}",
-                "IdeaNest",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-    }
-
-    private void CopyNoteNest()
-    {
-        if (VisibleCards.Count == 0)
-        {
-            MessageBox.Show(
-                "NoteNest向けに出力するカードがありません。",
-                "IdeaNest",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-            return;
-        }
-
-        var optsDlg = new Views.NoteNestExportOptionsWindow
-        {
-            Owner = Application.Current?.MainWindow,
-        };
-        if (optsDlg.ShowDialog() != true) return;
-        var options = optsDlg.Options!;
-
-        var text = NoteNestExportService.FormatAll(
-            VisibleCards, SearchText, SelectedTag, SelectedColor, ShowArchived, options);
-        try
-        {
-            Clipboard.SetText(text);
-            ShowStatus($"表示中の{VisibleCards.Count}件をNoteNest向け形式でコピーしました。");
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                $"クリップボードへのコピーに失敗しました:\n{ex.Message}",
-                "IdeaNest",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
     }
 
     private void ShowStatus(string message)
