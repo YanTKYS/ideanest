@@ -5,6 +5,11 @@
 `MainViewModel` に残っていた保存状態・自動保存まわりの責務を `SaveStateViewModel` に切り出しました。
 v0.8.1 〜 v0.8.5 と同様、XAML・既存挙動・保存形式は変更なし。
 
+> 追補 (2026-06-07): `CanScheduleAutoSave` の依存状態 (`CurrentFilePath` / `_isAutoSaving`) が
+> 変化する箇所で `PropertyChanged` が発火するように修正。`SaveStateViewModel` は `ViewModelBase`
+> を継承し公開状態として設計されているため、将来 UI バインディング/コマンドの `CanExecute` から
+> 参照したときに通知漏れを起こさないようにする保険。テストも 7 件追加。
+
 ### 変更内容
 
 - **`SaveStateViewModel` を新規追加** (`ViewModels/SaveStateViewModel.cs`)
@@ -29,10 +34,11 @@ v0.8.1 〜 v0.8.5 と同様、XAML・既存挙動・保存形式は変更なし�
 
 - **`IdeaNest.Tests.csproj`** に `SaveStateViewModel.cs` の `<Compile Include>` を追加
 
-- **新規テスト 29 件** (`SaveStateViewModelTests.cs`):
+- **新規テスト 36 件** (`SaveStateViewModelTests.cs`):
   初期状態・`MarkDirty`・`OnFileLoaded`・`OnManualSaveSuccess`・`Reset`・
   自動保存ライフサイクル (`OnAutoSaveBegin` / `OnAutoSaveSuccess` / `OnAutoSaveFail`)・
-  終了時確認フラグ (`IsDirty`) の各遷移を網羅
+  終了時確認フラグ (`IsDirty`) の各遷移、および `CanScheduleAutoSave` の
+  `PropertyChanged` 発火タイミング (依存状態変化時に通知、無関係な変化では非通知) を網羅
 
 ### 影響範囲
 

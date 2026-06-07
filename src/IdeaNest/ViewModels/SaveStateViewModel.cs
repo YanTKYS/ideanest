@@ -32,7 +32,10 @@ public class SaveStateViewModel : ViewModelBase
         private set
         {
             if (SetField(ref _currentFilePath, value))
+            {
                 OnPropertyChanged(nameof(SaveStatusText));
+                OnPropertyChanged(nameof(CanScheduleAutoSave));
+            }
         }
     }
 
@@ -117,6 +120,7 @@ public class SaveStateViewModel : ViewModelBase
     {
         _isAutoSaving = true;
         OnPropertyChanged(nameof(SaveStatusText));
+        OnPropertyChanged(nameof(CanScheduleAutoSave));
     }
 
     /// <summary>Called by MainViewModel after the auto-save write succeeds.</summary>
@@ -127,6 +131,7 @@ public class SaveStateViewModel : ViewModelBase
         _autoSaveFailed = false;
         _isAutoSaving = false;
         OnPropertyChanged(nameof(SaveStatusText));
+        OnPropertyChanged(nameof(CanScheduleAutoSave));
     }
 
     /// <summary>
@@ -138,6 +143,7 @@ public class SaveStateViewModel : ViewModelBase
         _autoSaveFailed = true;
         _isAutoSaving = false;
         OnPropertyChanged(nameof(SaveStatusText));
+        OnPropertyChanged(nameof(CanScheduleAutoSave));
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
@@ -148,5 +154,6 @@ public class SaveStateViewModel : ViewModelBase
         _autoSaveFailed = false;
         _isAutoSaving = false;
         OnPropertyChanged(nameof(SaveStatusText));
+        OnPropertyChanged(nameof(CanScheduleAutoSave));
     }
 }
