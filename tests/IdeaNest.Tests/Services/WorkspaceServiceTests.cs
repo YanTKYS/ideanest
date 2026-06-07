@@ -54,6 +54,11 @@ public class WorkspaceServiceTests
         using var dir = new TempDir();
         var path = Path.Combine(dir.Path, "ws.ideanest");
 
+        var idea1CreatedAt = new DateTime(2025, 1, 15, 10, 0, 0);
+        var idea1UpdatedAt = new DateTime(2025, 6, 1, 12, 30, 0);
+        var idea2CreatedAt = new DateTime(2025, 3, 20, 9, 0, 0);
+        var idea2UpdatedAt = new DateTime(2025, 6, 5, 18, 0, 0);
+
         var ws = new Workspace
         {
             WorkspaceName = "Round Trip",
@@ -74,19 +79,25 @@ public class WorkspaceServiceTests
             {
                 new Idea
                 {
+                    Id = "id-001",
                     Title = "First",
                     Body = "body 1",
                     Tags = { "UI", "design" },
                     Color = "yellow",
                     IsPinned = true,
+                    CreatedAt = idea1CreatedAt,
+                    UpdatedAt = idea1UpdatedAt,
                 },
                 new Idea
                 {
+                    Id = "id-002",
                     Title = "Second",
                     Body = "body 2",
                     Tags = { "ops" },
                     Color = "blue",
                     IsArchived = true,
+                    CreatedAt = idea2CreatedAt,
+                    UpdatedAt = idea2UpdatedAt,
                 },
             },
         };
@@ -94,9 +105,11 @@ public class WorkspaceServiceTests
         WorkspaceService.Save(path, ws);
         var loaded = WorkspaceService.Load(path);
 
+        // Settings
         Assert.Equal("Round Trip", loaded.WorkspaceName);
         Assert.Equal("alpha", loaded.Settings.SearchText);
         Assert.Equal("UI", loaded.Settings.SelectedTag);
+        Assert.Equal("blue", loaded.Settings.SelectedColor);
         Assert.True(loaded.Settings.ShowArchived);
         Assert.True(loaded.Settings.TagPanelOpen);
         Assert.Equal("large", loaded.Settings.CardSize);
@@ -105,11 +118,30 @@ public class WorkspaceServiceTests
         Assert.Equal(1234, loaded.Settings.WindowWidth);
         Assert.Equal(789, loaded.Settings.WindowHeight);
 
+        // Ideas
         Assert.Equal(2, loaded.Ideas.Count);
-        Assert.Equal("First", loaded.Ideas[0].Title);
-        Assert.Equal(new[] { "UI", "design" }, loaded.Ideas[0].Tags);
-        Assert.True(loaded.Ideas[0].IsPinned);
-        Assert.True(loaded.Ideas[1].IsArchived);
+
+        var first = loaded.Ideas[0];
+        Assert.Equal("id-001", first.Id);
+        Assert.Equal("First", first.Title);
+        Assert.Equal("body 1", first.Body);
+        Assert.Equal(new[] { "UI", "design" }, first.Tags);
+        Assert.Equal("yellow", first.Color);
+        Assert.True(first.IsPinned);
+        Assert.False(first.IsArchived);
+        Assert.Equal(idea1CreatedAt, first.CreatedAt);
+        Assert.Equal(idea1UpdatedAt, first.UpdatedAt);
+
+        var second = loaded.Ideas[1];
+        Assert.Equal("id-002", second.Id);
+        Assert.Equal("Second", second.Title);
+        Assert.Equal("body 2", second.Body);
+        Assert.Equal(new[] { "ops" }, second.Tags);
+        Assert.Equal("blue", second.Color);
+        Assert.False(second.IsPinned);
+        Assert.True(second.IsArchived);
+        Assert.Equal(idea2CreatedAt, second.CreatedAt);
+        Assert.Equal(idea2UpdatedAt, second.UpdatedAt);
     }
 
     [Fact]

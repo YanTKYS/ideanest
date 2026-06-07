@@ -39,7 +39,7 @@
 ### スコープ外 (今後の検討事項)
 
 - `MainViewModel` 自体の単体テスト整備 (`MainViewModel` の責務分割と併せて検討。
-  backlog M11/M12 で継続管理)
+  backlog M12 で継続管理)
 - `AppSettingsService` のテスト (`%AppData%` 固定パスのためフックポイントが必要。
   別途検討)
 - UI / E2E テスト (WPF 自動操作は今回スコープ外)
