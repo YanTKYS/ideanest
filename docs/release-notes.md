@@ -1,5 +1,50 @@
 # リリースノート
 
+## v0.8.9 (タグ管理ロジックの分割) — 2026-06-08
+
+### 変更概要
+
+`MainViewModel` に残っていたタグ管理ロジック (タグ名変更・タグ削除・タグ統合と、
+それに伴う選択タグ調整・全カード反映・dirty 通知・表示更新) を、
+WPF 非依存の `TagManagementService` に切り出しました。
+UI 挙動・保存形式・XAML バインディング・タグ管理ダイアログの見た目に変更はありません。
+
+### 新規クラス
+
+| クラス | 責務 |
+| --- | --- |
+| `TagManagementService` | タグ名変更 / タグ削除 / タグ統合 (rename 経由)。選択タグ追従 (リネーム時) / 選択タグクリア (削除時) を含む。コールバック (onDirty / onRefreshTags / onRefreshVisible) 経由で後続処理を委譲 |
+
+### MainViewModel の変更
+
+- `RenameTag` / `DeleteTag` の実装本体を `TagManagementService` に委譲
+- `MainViewModel.RenameTag` / `DeleteTag` は薄い転送メソッドとして残し、
+  既存の `TagManagementWindow` コードビハインドからの呼び出し (`_vm.RenameTag(...)`) を不変に維持
+- `_tagMgmt` インスタンスはコンストラクタで 1 度だけ生成。
+  `AllCards` (`ObservableCollection`) と `SelectedTag` のゲッタ/セッタを参照渡しで取り回すため、
+  ワークスペース入れ替え時の再生成は不要
+
+### タグ統合 (マージ) について
+
+- v0.8.9 で挙動の変更はありません。リネーム先に既存タグ名を指定したときに
+  `WorkspaceService.NormalizeTags` が同一カード内の重複を畳むことで、
+  自然にマージが成立する設計を維持しています (v0.2.0 の設計判断と整合)。
+
+### テスト追加 (302件、+18件)
+
+- `TagManagementServiceTests` — 18件
+  - RenameTag: 対象タグの更新 / マージ経路 (`#` 正規化を含む) / 空白・同名の no-op /
+    コールバック検証 / 選択タグ追従 / UpdatedAt の局所更新 / 大文字小文字区別
+  - DeleteTag: 全カードからの除去 (カード本体は残る) / 選択タグクリア /
+    コールバック検証 / UpdatedAt の局所更新 / 該当タグなし時もコールバックは呼ばれる契約
+
+### 変更なし
+
+- 保存ファイル形式 (`.ideanest`) / XAML / タグ管理ダイアログの見た目 / メニュー構成 /
+  キーボードショートカット / 自動保存挙動 / エクスポート出力形式 — **すべて変更なし**
+
+---
+
 ## v0.8.8 (カード操作・タグ集計の分割) — 2026-06-07
 
 ### 変更概要

@@ -19,6 +19,7 @@ public class MainViewModel : ViewModelBase
 {
     private Workspace _workspace = new();
     private CardOperationsService _cardOps = null!; // assigned in constructor, re-created by ReloadFromWorkspace
+    private TagManagementService _tagMgmt = null!; // assigned in constructor
     private DispatcherTimer? _autoSaveTimer;
     private DispatcherTimer? _statusClearTimer;
     private string _statusMessage = string.Empty;
@@ -275,6 +276,13 @@ public class MainViewModel : ViewModelBase
             CardDisplay.Reshuffle(AllCards.Where(c => !c.IsPinned).Select(c => c.Id)));
 
         _cardOps = CreateCardOps();
+        _tagMgmt = new TagManagementService(
+            AllCards,
+            getSelectedTag: () => SelectedTag,
+            setSelectedTag: t => SelectedTag = t,
+            onDirty: MarkDirty,
+            onRefreshTags: RefreshTags,
+            onRefreshVisible: RefreshVisible);
     }
 
     private CardOperationsService CreateCardOps() => new(
@@ -606,55 +614,9 @@ public class MainViewModel : ViewModelBase
         _statusClearTimer.Start();
     }
 
-    public void RenameTag(string oldName, string newName)
-    {
-        newName = WorkspaceService.NormalizeTag(newName);
-        if (string.IsNullOrWhiteSpace(newName) || newName == oldName) return;
+    public void RenameTag(string oldName, string newName) => _tagMgmt.RenameTag(oldName, newName);
 
-        foreach (var card in AllCards)
-        {
-            if (card.Tags.Any(t => string.Equals(t, oldName, StringComparison.Ordinal)))
-            {
-                card.Tags = WorkspaceService.NormalizeTags(
-                    card.Tags.Select(t => string.Equals(t, oldName, StringComparison.Ordinal) ? newName : t));
-                card.Touch();
-                card.OnExternalUpdate();
-            }
-        }
-
-        if (string.Equals(SelectedTag, oldName, StringComparison.Ordinal))
-        {
-            SelectedTag = newName;
-        }
-
-        MarkDirty();
-        RefreshTags();
-        RefreshVisible();
-    }
-
-    public void DeleteTag(string tagName)
-    {
-        foreach (var card in AllCards)
-        {
-            if (card.Tags.Any(t => string.Equals(t, tagName, StringComparison.Ordinal)))
-            {
-                card.Tags = card.Tags
-                    .Where(t => !string.Equals(t, tagName, StringComparison.Ordinal))
-                    .ToList();
-                card.Touch();
-                card.OnExternalUpdate();
-            }
-        }
-
-        if (string.Equals(SelectedTag, tagName, StringComparison.Ordinal))
-        {
-            SelectedTag = string.Empty;
-        }
-
-        MarkDirty();
-        RefreshTags();
-        RefreshVisible();
-    }
+    public void DeleteTag(string tagName) => _tagMgmt.DeleteTag(tagName);
 
     private void RefreshVisible()
     {
