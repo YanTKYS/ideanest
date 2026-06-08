@@ -42,13 +42,17 @@ public class TagManagementService
     /// Renames every occurrence of <paramref name="oldName"/> to <paramref name="newName"/>.
     /// When a card already carries <paramref name="newName"/>, NormalizeTags collapses the
     /// duplicate — this is the merge path.
-    /// No-op when the new name normalises to empty or to the same value as <paramref name="oldName"/>.
-    /// Returns true if any mutation was performed.
+    /// Returns false without firing any callbacks when the new name normalises to empty or
+    /// to the same value as <paramref name="oldName"/>, or when no card and no selected-tag
+    /// filter actually carry <paramref name="oldName"/>.
+    /// Returns true when at least one card or the selected-tag filter was mutated.
     /// </summary>
     public bool RenameTag(string oldName, string newName)
     {
         newName = WorkspaceService.NormalizeTag(newName);
         if (string.IsNullOrWhiteSpace(newName) || newName == oldName) return false;
+
+        bool mutated = false;
 
         foreach (var card in _allCards)
         {
@@ -58,13 +62,17 @@ public class TagManagementService
                     card.Tags.Select(t => string.Equals(t, oldName, StringComparison.Ordinal) ? newName : t));
                 card.Touch();
                 card.OnExternalUpdate();
+                mutated = true;
             }
         }
 
         if (string.Equals(_getSelectedTag(), oldName, StringComparison.Ordinal))
         {
             _setSelectedTag(newName);
+            mutated = true;
         }
+
+        if (!mutated) return false;
 
         _onDirty();
         _onRefreshTags();
