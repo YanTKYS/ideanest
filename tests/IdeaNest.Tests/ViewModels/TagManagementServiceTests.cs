@@ -181,6 +181,36 @@ public class TagManagementServiceTests
         Assert.Equal(new System.DateTime(2020, 1, 1), untouched.UpdatedAt);
     }
 
+    [Fact]
+    public void RenameTag_OldTagAbsentFromCardsAndSelection_ReturnsFalseAndSkipsCallbacks()
+    {
+        var h = new Harness { SelectedTag = "something-else" };
+        h.AddCard("keep");
+
+        var changed = h.Service.RenameTag("never-existed", "new");
+
+        Assert.False(changed);
+        Assert.Equal(new[] { "keep" }, h.AllCards[0].Tags);
+        Assert.Equal("something-else", h.SelectedTag);
+        Assert.Equal(0, h.Counters.Dirty);
+        Assert.Equal(0, h.Counters.Tags);
+        Assert.Equal(0, h.Counters.Visible);
+    }
+
+    [Fact]
+    public void RenameTag_OldTagAbsentFromCardsButMatchesSelection_ReturnsTrueAndFollows()
+    {
+        // Changing the selected-tag filter is itself a mutation even when no card carries oldName.
+        var h = new Harness { SelectedTag = "old" };
+        h.AddCard("keep");
+
+        var changed = h.Service.RenameTag("old", "new");
+
+        Assert.True(changed);
+        Assert.Equal("new", h.SelectedTag);
+        Assert.Equal(1, h.Counters.Dirty);
+    }
+
     // ── DeleteTag ─────────────────────────────────────────────────────────────
 
     [Fact]
