@@ -1,5 +1,67 @@
 # リリースノート
 
+## v0.9.0 (v1.0.0 に向けた総点検) — 2026-06-08
+
+### 変更概要
+
+新機能の追加・UI 変更・保存形式変更は一切行わず、v0.8.1 〜 v0.8.9 で進めた
+`MainViewModel` 分割の総点検と、ドキュメント・テストシナリオ・バックログの
+整理を行いました。これにより v1.0.0 (機能凍結・配布準備) に進めるかの判断材料が揃います。
+
+### 点検結果
+
+すべての領域でコードレビューと既存テスト 304 件全件パスを確認し、回帰がないことを検証しました。
+
+- **起動導線**: スタートダイアログ / 引数指定起動 / 最近使ったファイル経由のいずれも従来挙動を維持
+- **保存・自動保存**: `SaveStateViewModel` 経由の状態遷移・`.bak` 生成・終了時確認すべて正常
+- **カード操作**: `CardOperationsService` 経由の追加・編集・削除・ピン留め・アーカイブが正常
+- **カード詳細プレビュー**: 単独表示 / 編集委譲 / 前後カード移動 / ランダム表示が正常
+- **フィルタ・タグパネル**: 検索・タグ・色・アーカイブ表示・タグパネル開閉・タグ検索が正常
+- **タグ管理**: `TagManagementService` 経由のリネーム・削除・統合 (rename 経由) が正常
+- **並び順・シャッフル**: 4 モード + 再シャッフル + ピン上部固定が正常
+- **エクスポート・コピー**: Markdown / NoteNest 双方の出力フォーマットが v0.8.0 以前と一致
+- **チュートリアル・バージョン表示**: タイトルバー / ヘルプメニュー経由のチュートリアル表示が正常
+
+### 修正内容 (ドキュメント整合)
+
+- **`release-notes.md` v0.8.9 セクションの追記**: 自己レビューで発見された `RenameTag` 戻り値契約
+  修正 (304件 / +20件) を v0.8.9 セクション内に統合し、`影響範囲` 節も追加
+- **`test-scenarios.md` UT1 セクションの拡充**: v0.8.7〜v0.8.9 で追加された 4 テストクラス
+  (`CardOperationsServiceTests` / `TagSyncServiceTests` / `TagManagementServiceTests` /
+  v0.8.7 の `CardDisplayViewModel onMarkDirty 順序テスト`) を一覧に追記
+- **`backlog.md` の整理**: 完了済み項目 (M12) を **完了済み** セクションに移動し、
+  残項目を「v1.0.0 前」「v1.0.0 後」の方針別に整理
+- **`design-decisions.md` の v0.9.0 判断追記**: 「v0.9.0 で総点検を行い v1.0.0 に進める」
+  判断と、`*Service` クラス群が `src/IdeaNest/ViewModels/` 下に置かれている件への注記
+- **`README.md` / `test-scenarios.md` / `IdeaNest.csproj` の `v0.9.0` バンプ**
+
+### ファイル配置に関する注記
+
+`CardOperationsService` / `TagSyncService` / `TagManagementService` の 3 クラスは
+名称が `*Service` でありながら、ソース上は `src/IdeaNest/ViewModels/` 下に
+`namespace IdeaNest.ViewModels` として配置されています。これは v0.8.1 〜 v0.8.6 で
+切り出した `*ViewModel` 群とテストプロジェクト (`<Compile Include>` リンク) の整理を
+最小限にとどめるための判断で、v1.0.0 で `Services/` フォルダへ整理する案は
+backlog の「v1.0.0 後」候補として残しています。
+
+### `docs/review-gemini.md` について
+
+v0.9.0 タスク仕様には `docs/review-gemini.md` の確認対象記載がありましたが、
+当該ファイルは現リポジトリには存在しません (`ls docs/` で確認)。
+v0.9.0 では新規作成も実施せず、状況のみ本リリースノートで明記します。
+
+### テスト
+
+- `dotnet build` 成功
+- `dotnet test` 全 304 件パス (テスト件数の追加なし)
+
+### 変更なし
+
+- 保存ファイル形式 (`.ideanest`) / `settings.json` / XAML / メニュー構成 /
+  キーボードショートカット / 自動保存挙動 / エクスポート出力形式 — **すべて変更なし**
+
+---
+
 ## v0.8.9 (タグ管理ロジックの分割) — 2026-06-08
 
 ### 変更概要
@@ -30,13 +92,36 @@ UI 挙動・保存形式・XAML バインディング・タグ管理ダイアロ
   `WorkspaceService.NormalizeTags` が同一カード内の重複を畳むことで、
   自然にマージが成立する設計を維持しています (v0.2.0 の設計判断と整合)。
 
-### テスト追加 (302件、+18件)
+### テスト追加 (304件、+20件)
 
-- `TagManagementServiceTests` — 18件
+- `TagManagementServiceTests` — 20件
   - RenameTag: 対象タグの更新 / マージ経路 (`#` 正規化を含む) / 空白・同名の no-op /
     コールバック検証 / 選択タグ追従 / UpdatedAt の局所更新 / 大文字小文字区別
   - DeleteTag: 全カードからの除去 (カード本体は残る) / 選択タグクリア /
     コールバック検証 / UpdatedAt の局所更新 / 該当タグなし時もコールバックは呼ばれる契約
+
+### 追加修正 (TagManagementService.RenameTag の戻り値契約) ([Low])
+
+リリース後の自己レビューで、`RenameTag` の戻り値が XML コメントの契約と一致していない
+ケースが見つかったため、同 v0.8.9 内で修正しました。
+
+- 旧タグ名がどのカードにも存在せず、選択中タグでもないとき、`RenameTag` は
+  `true` を返し dirty / refresh コールバックも発火していた
+- 実際にカード or 選択タグが変化した場合のみ `true` を返し、コールバックを発火する
+  契約に統一 (`mutated` フラグでトラッキング)
+- `DeleteTag` は v0.8.8 以来「対象タグなし時もコールバックを呼ぶ」契約を明示しているため
+  挙動を変えず、テストとリリースノートで明文化済み (差を保つ)
+- 該当テストを 2 件追加: 対象タグなし + 選択タグ不一致で no-op / 対象タグなしでも
+  選択タグ一致なら mutation 扱い
+
+### 影響範囲
+
+- `src/IdeaNest/IdeaNest.csproj` の `<Version>` を `0.8.8` → `0.8.9` に更新
+- `src/IdeaNest/ViewModels/TagManagementService.cs` を新規追加
+- `tests/IdeaNest.Tests/IdeaNest.Tests.csproj` の `<Compile Include>` リストに
+  `TagManagementService.cs` を追加
+- `MainViewModel.cs` の `RenameTag` / `DeleteTag` は薄い転送に縮小
+- XAML / コードビハインドへの変更なし
 
 ### 変更なし
 
