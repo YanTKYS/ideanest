@@ -22,7 +22,7 @@
 4. **一度に 1 〜 2 責務を切り出す** — 大規模リファクタリングは避け、
    既存テストが全件グリーンであることを確認しながら進める。
 
-### 分割済み (v0.8.1 〜 v0.8.8)
+### 分割済み (v0.8.1 〜 v0.8.9)
 
 | サブ ViewModel / Service | 担当 | 状態 |
 | --- | --- | --- |
@@ -33,12 +33,14 @@
 | `RecentFilesService` + `StartupCoordinator` + `StartupViewModel` | 最近使ったファイル一覧の純粋ロジック / 起動引数解決 / スタートダイアログ状態 | ✅ 完了 (v0.8.5) |
 | `SaveStateViewModel` | ファイルパス / dirty フラグ / 自動保存スケジューリング判定 / 保存ステータス文言 | ✅ 完了 (v0.8.6) |
 | `CardOperationsService` + `TagSyncService` | カード追加・編集・削除・ピン留め・アーカイブ / タグ集計 | ✅ 完了 (v0.8.8) |
+| `TagManagementService` | タグ名変更 / 削除 / 統合 (rename 経由) と選択タグ追従・クリア | ✅ 完了 (v0.8.9) |
 
 ### 今後の候補 (backlog M12 で継続)
 
-| 候補 | 担当 | 備考 |
-| --- | --- | --- |
-| `TagManagementViewModel` | `RenameTag` / `DeleteTag` / `AvailableTags` | `AllCards` 参照あり、要設計 |
+現時点で WPF 非依存に切り出せる純粋ロジックの主要な塊は出尽くしている。
+今後の分割対象としては、`RefreshVisible` の絞り込み・ソート段 (CardDisplay の `OrderByShuffle` と
+`Filter.*` を組み合わせた純関数として抽出可能) や、自動保存スケジューラ (DispatcherTimer 起動条件
+の集約) が候補だが、いずれも v0.8.x の範囲では現状の構成で機能しているため後続で再検討する。
 
 ### v0.8.4 で `IExportPlatform` インターフェースを導入した理由
 
@@ -55,6 +57,31 @@
   `SaveFileDialog` のフィルタ文字列・既定拡張子といった UI 詳細を MainViewModel から退避。
   これらの WPF 詳細は今後 UI を別 OS に移植する際の単一の隔離ポイントになる。
 - DI コンテナ導入は引き続き対象外。インスタンスは MainViewModel が `new` で生成する。
+
+### v0.8.9 でタグ管理ロジックを TagManagementService に切り出した理由
+
+- v0.8.8 までで `MainViewModel` から純粋ロジックの大半を切り出した結果、残っていたのは
+  `RenameTag` / `DeleteTag` の本体 (約 50 行) だけだった。これらは
+  「全カード走査 → タグ書き換え → `Touch` / `OnExternalUpdate` → 選択タグ調整 → dirty / refresh」
+  という完全に決まったパイプラインで、WPF にも `_workspace` にも触らない。
+- 切り出し先を「Service」にした理由は、`CardOperationsService` と並びを揃え、
+  状態 (タグ一覧自体) は持たず、コールバックでのみ外部と接続する構造に統一するため。
+  `TagManagementViewModel` 名は採用しなかった: タグ管理ダイアログ自体の状態
+  (検索文字列・並び順など) はまだ追加していないため「ViewModel」と呼ぶには内容が薄い。
+- 既存の `TagManagementWindow.xaml.cs` は `_vm.RenameTag(...)` / `_vm.DeleteTag(...)` の形で
+  呼び出していたため、`MainViewModel` 側に同名の薄いメソッドを残してダイアログ側のコードは
+  無変更を維持した。XAML / コードビハインドへの波及をゼロにする方針は v0.8.1 以降一貫している。
+- 「リネーム = マージ」の挙動は v0.2.0 で確立した設計判断であり、これを内部で別経路にせず、
+  `WorkspaceService.NormalizeTags` の重複畳み込みで自然に成立させる構造を維持した。
+  「マージは rename の特殊ケース」という構造的事実をコードに残したい。
+- 選択タグ追従 (`SelectedTag` がリネーム対象なら新名に追従 / 削除対象ならクリア) は、
+  `Func<string>` / `Action<string>` で外から差し込める形にした。
+  これにより `FilterViewModel.SelectedTag` の更新をプロパティ経由で確実に通すことができ、
+  サービス側は `FilterViewModel` の実装詳細を知らずに済む。
+- `_tagMgmt` は `AllCards` と `SelectedTag` のゲッタ/セッタ越しに状態を見るため、
+  ワークスペース入れ替え時の再生成は不要 (`CardOperationsService` が `_workspace.Ideas` を
+  直接参照するため再生成が必要だったのとは対称的)。
+- DI コンテナは引き続き対象外。`_tagMgmt` は `MainViewModel` のコンストラクタで `new` する。
 
 ### v0.8.8 でカード操作・タグ集計を 2 クラスに切り出した理由
 
