@@ -8,11 +8,11 @@
 - **B**：有益だが影響範囲・設計コストが中程度
 - **C**：長期的に有望だが現時点では慎重に扱う
 
-### スコープ区分 (v0.9.0 で導入)
+### スコープ区分 (v0.9.0 で導入 / v1.0.0 で整理)
 
 - **完了済み**: 実装・リリース済みの項目
-- **v1.0.0 前**: v1.0.0 (機能凍結 / 配布準備) までに着手判断する候補
-- **v1.0.0 後**: v1.0.0 リリース後に再判断する候補
+- **v1.0.0 以降に検討**: 正式リリース後に再判断する候補
+- **当面見送り**: 価値はあるが現時点では工数 / リスクが見合わない項目
 - **対象外**: 設計方針として原則実装しない項目
 
 ---
@@ -24,27 +24,11 @@
 | No | 項目 | 完了バージョン |
 | --- | --- | --- |
 | M12 | MainViewModel の段階的分割 | v0.8.1〜v0.8.9 (`CardDisplayViewModel` / `FilterViewModel` / `TagPanelViewModel` / `ExportViewModel+IExportPlatform` / `RecentFilesService+StartupCoordinator+StartupViewModel` / `SaveStateViewModel` / `CardOperationsService+TagSyncService` / `TagManagementService` を抽出。WPF 非依存の純粋ロジックは出尽くしたためここで一区切り。詳細方針は `design-decisions.md` 参照) |
+| R1 | v1.0.0 リリース準備 | v1.0.0 (csproj `<Version>` 1.0.0 化、README / docs / release-notes を v1.0.0 時点に整理、`docs/test-scenarios.md` に Windows ビルド向けリリース前チェックリスト R1〜R12 を追加。`Assets/tutorial.png` の同梱状況など、本リポジトリの範囲外の確認項目は test-scenarios と release-notes で明示) |
 
 ---
 
-## v1.0.0 前 — 着手判断する候補
-
-v1.0.0 (機能凍結 / 配布準備) までに採用するかを再判断する項目。
-新機能要素を含むものは v0.9.0 の総点検方針上、原則として v1.0.0 後に回しています。
-バグ・回帰・配布上の障害が見つかった場合のみここに追加する想定。
-
-| No | 項目 | 概要 | 優先度 |
-| --- | --- | --- | --- |
-| R1 | v1.0.0 リリース準備 | 配布物 (`PublishSingleFile=true`) の挙動確認、起動時間とメモリ使用量の目視確認、`README` 配布手順の最新化 | A |
-
-(v0.9.0 時点では現時点で v1.0.0 前にやり残しているバグ・不整合は確認できていない。
-追加で見つかった場合はここに項目を起こす。)
-
----
-
-## v1.0.0 後 — 機能拡張候補
-
-v1.0.0 リリース後に再判断する機能。新機能要素を含むため、配布が安定してから検討する。
+## v1.0.0 以降に検討
 
 ### 低難易度
 

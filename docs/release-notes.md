@@ -1,5 +1,79 @@
 # リリースノート
 
+## v1.0.0 (正式リリース) — 2026-06-09
+
+### 変更概要
+
+IdeaNest を **v1.0.0 として正式リリース**します。
+新機能の追加・UI 変更・保存形式変更は行わず、v0.1.0 から積み上げた機能と
+v0.8.x で進めた `MainViewModel` の責務分割・単体テスト整備 (304 件) を
+反映したリリース版として整理しました。
+
+### 含まれるもの (v0.1.0 〜 v0.9.0 の累積)
+
+機能領域は変わっていません。詳細は本ファイルの過去エントリと `README.md` を参照。
+
+- **カード管理**: 追加・編集・削除・ピン留め・アーカイブ / カード詳細プレビュー /
+  前後カード移動 / 壁打ち (ランダムプレビュー)
+- **検索とフィルタ**: キーワード検索 (タイトル / 本文 / タグ) / タグフィルタ /
+  色フィルタ (8 色) / アーカイブ表示切替 / フィルタの保存・復元
+- **タグ管理**: タグパネル開閉 / タグ検索 / タグ管理ダイアログでのリネーム・統合・削除 /
+  タグ正規化 (前後空白・先頭 `#`・重複)
+- **並び順とサイズ**: 更新日時順 / 作成日時順 / タイトル順 / シャッフル+再シャッフル /
+  カードサイズ S/M/L 切替 / カード高さモード (固定 / 本文に合わせる)
+- **保存・自動保存**: `.ideanest` (UTF-8 JSON 単一ファイル) / 名前を付けて保存 /
+  自動保存 (既存ファイルのみ、2 秒デバウンス) / `.bak` 1 世代 / 終了時確認 /
+  保存状態表示
+- **起動導線**: スタートダイアログ / 最近使ったファイル (5 件) / `.ideanest` ダブル
+  クリック起動 / コマンドライン引数指定起動
+- **エクスポート / コピー**: Markdown 風エクスポート / NoteNest 向けエクスポート
+  (`[NOTE]` / `[TODO]` オプション付き) / カード単体・表示中全件のクリップボードコピー
+- **その他**: チュートリアル画面 (ヘルプメニュー) / `.bak` 自動生成 / ウィンドウサイズ復元
+
+### 内部構造
+
+v0.8.1 〜 v0.8.9 で進めた `MainViewModel` の分割により、以下の WPF 非依存
+ViewModel / Service が単体テストでカバーされています。
+
+| クラス | 担当 |
+| --- | --- |
+| `CardDisplayViewModel` | カードサイズ / 高さモード / ソート / シャッフル |
+| `FilterViewModel` | 検索 / タグ / 色 / アーカイブ表示 / アクティブ判定 |
+| `TagPanelViewModel` | タグパネル状態 / タグ検索 / 表示用タグリスト |
+| `ExportViewModel` + `IExportPlatform` | Markdown / NoteNest エクスポート・コピー |
+| `RecentFilesService` + `StartupCoordinator` + `StartupViewModel` | 最近使ったファイル / 起動引数解決 / スタートダイアログ状態 |
+| `SaveStateViewModel` | ファイルパス / dirty / 自動保存スケジューリング判定 / 保存ステータス文言 |
+| `CardOperationsService` + `TagSyncService` | カード追加・編集・削除・ピン留め・アーカイブ / タグ集計 |
+| `TagManagementService` | タグ名変更 / 削除 / 統合 (rename 経由) と選択タグ追従・クリア |
+
+### 確認したこと
+
+- `dotnet build` 成功
+- `dotnet test` で全 304 件パス
+- `tools/IdeaNest.Smoke` の `ALL CHECKS PASSED`
+- `README.md` / `docs/release-notes.md` / `docs/test-scenarios.md` /
+  `docs/design-decisions.md` / `docs/backlog.md` のバージョン表記と内容を v1.0.0 に整理
+- `docs/test-scenarios.md` に **v1.0.0 リリース前チェックリスト** (R1 〜 R12) を追加
+- `docs/backlog.md` を 完了済み / v1.0.0 以降に検討 / 当面見送り / 対象外 の 4 区分に整理
+
+### 既知の留意事項 (Windows ビルド時の確認推奨)
+
+- **`src/IdeaNest/Assets/tutorial.png` がリポジトリに含まれていません**
+  (`git ls-files` で未検出)。`IdeaNest.csproj` に
+  `<Resource Include="Assets\tutorial.png" />` が、`Views/TutorialWindow.xaml` に
+  `Source="pack://application:,,,/Assets/tutorial.png"` が記述されているため、
+  Windows でリリースビルドする前に画像ファイルを追加してください。
+  追加後は `docs/test-scenarios.md` の R4 / R6 で動作を確認できます。
+- リリースビルドおよび実機での動作確認 (R1 〜 R12) は本リポジトリの管理外で
+  実施し、結果をチェックリストに沿って記録してください。
+
+### 変更なし
+
+- 保存ファイル形式 (`.ideanest`) / `settings.json` / XAML / メニュー構成 /
+  キーボードショートカット / 自動保存挙動 / エクスポート出力形式 — **すべて変更なし**
+
+---
+
 ## v0.9.0 (v1.0.0 に向けた総点検) — 2026-06-08
 
 ### 変更概要
