@@ -2,6 +2,10 @@
 
 IdeaNest は、思いついたアイデアを素早く保存し、あとから検索・整理できる **ローカル利用前提のカード型メモツール** です。
 
+> **v1.0.0** — v0.1.0 から積み上げてきた機能と、v0.8.x で進めた `MainViewModel` の責務分割・
+> 単体テスト整備 (304 件) を反映した正式リリースです。新機能の追加は行わず、安定動作と
+> 配布可能な状態を優先しています。
+
 ## IdeaNest とは
 
 - アイデア 1 件 = カード 1 枚
@@ -39,7 +43,7 @@ v0.1.2 で画面の見た目を以下のように整理しました。
 外部 UI ライブラリ (MahApps.Metro / Material Design / Fluent UI 等) や
 WebView2 は導入せず、WPF 標準機能の範囲で実現しています。
 
-## 主な機能 (v0.9.0)
+## 主な機能 (v1.0.0)
 
 - アイデアカードの追加・編集・削除
 - カード型の一覧表示 (ピン留めが上に来る) — カード操作ボタンはホバー時のみ表示
@@ -138,7 +142,7 @@ dotnet run --project src/IdeaNest/IdeaNest.csproj
 > dotnet run --project tools/IdeaNest.Smoke
 > ```
 
-### Unit テストの実行 (v0.8.0 で追加 / v0.8.1〜v0.9.0 で ViewModel / Service テストを追加)
+### Unit テストの実行 (v0.8.0 で追加 / v0.8.1〜v1.0.0 で ViewModel / Service テスト整備完了)
 
 `tests/IdeaNest.Tests` に xUnit ベースの単体テストプロジェクトがあります。
 主要な Service / ViewModel ロジック (タグ正規化・ワークスペース保存読込・
