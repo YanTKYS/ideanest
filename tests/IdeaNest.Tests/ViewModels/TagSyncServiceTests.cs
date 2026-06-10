@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using IdeaNest.Models;
+using IdeaNest.Services;
 using IdeaNest.ViewModels;
 using Xunit;
 

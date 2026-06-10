@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using IdeaNest.Services;
+using IdeaNest.ViewModels;
 
-namespace IdeaNest.ViewModels;
+namespace IdeaNest.Services;
 
 /// <summary>
 /// WPF-free tag rename / delete / merge logic extracted from MainViewModel.
