@@ -40,11 +40,12 @@ public partial class MainWindow : Window
         }
 
         // Ctrl+V: create a new card from clipboard text.
-        // Skip when an editable control (TextBox / search bar / dialog input) has focus
-        // so paste keeps working inside text inputs.
+        // Only fires when focus is inside the card area (CardArea or its descendants)
+        // so Ctrl+V in the tag panel, sort ComboBox, search box, etc. is unaffected.
         if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
         {
             if (e.OriginalSource is TextBoxBase) return;
+            if (!IsDescendantOrSelf(e.OriginalSource as DependencyObject, CardArea)) return;
             if (_vm.PasteAsNewCard()) e.Handled = true;
         }
     }
@@ -127,6 +128,15 @@ public partial class MainWindow : Window
         for (var d = src; d != null; d = VisualTreeHelper.GetParent(d))
         {
             if (d is ButtonBase) return true;
+        }
+        return false;
+    }
+
+    private static bool IsDescendantOrSelf(DependencyObject? element, DependencyObject ancestor)
+    {
+        for (var d = element; d != null; d = VisualTreeHelper.GetParent(d))
+        {
+            if (d == ancestor) return true;
         }
         return false;
     }
