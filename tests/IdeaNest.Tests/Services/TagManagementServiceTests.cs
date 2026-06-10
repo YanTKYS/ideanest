@@ -6,7 +6,7 @@ using IdeaNest.Services;
 using IdeaNest.ViewModels;
 using Xunit;
 
-namespace IdeaNest.Tests.ViewModels;
+namespace IdeaNest.Tests.Services;
 
 public class TagManagementServiceTests
 {
