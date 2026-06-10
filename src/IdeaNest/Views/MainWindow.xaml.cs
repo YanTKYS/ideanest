@@ -81,6 +81,9 @@ public partial class MainWindow : Window
     {
         _vm.ApplyInitialWindowSize(this);
         _sizeTrackingEnabled = true;
+        // Land initial keyboard focus on the card area so Ctrl+V works
+        // immediately after startup without requiring an explicit click.
+        CardArea.Focus();
     }
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
@@ -139,6 +142,15 @@ public partial class MainWindow : Window
             if (d == ancestor) return true;
         }
         return false;
+    }
+
+    private void OnCardAreaMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        // Buttons and other focusable inner controls mark MouseDown as Handled,
+        // so this bubbling handler only runs when the click hit non-interactive
+        // surface (empty state, ScrollViewer background, card body). In that
+        // case move keyboard focus to CardArea so Ctrl+V is accepted.
+        if (!CardArea.IsKeyboardFocusWithin) CardArea.Focus();
     }
 
     private void OnCardAreaDragOver(object sender, DragEventArgs e)
