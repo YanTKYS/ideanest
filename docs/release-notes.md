@@ -1,5 +1,31 @@
 # リリースノート
 
+## v1.0.3 — 2026-06-10
+
+### 変更概要
+
+内部コードの整理。動作変更・UI 変更・保存形式変更はありません。
+
+### 変更内容
+
+- **`*Service` クラスを `Services/` フォルダへ移動** (バックログ M14):
+  `CardOperationsService` / `TagSyncService` / `TagManagementService` の 3 クラスを
+  `src/IdeaNest/ViewModels/` から `src/IdeaNest/Services/` に移動し、
+  namespace を `IdeaNest.ViewModels` → `IdeaNest.Services` に統一しました。
+  既存の `WorkspaceService` / `MarkdownExportService` / `NoteNestExportService` 等と
+  同じフォルダ・namespace に揃い、名称と配置の一致が回復しました。
+  - `MainViewModel.cs` はすでに `using IdeaNest.Services;` を持つため変更なし。
+  - テストプロジェクト (`IdeaNest.Tests.csproj`) の `<Compile Include>` パスを
+    `ViewModels\*` → `Services\*` に更新。
+  - テストファイル 3 件に `using IdeaNest.Services;` を追加。
+
+### 確認したこと
+
+- `dotnet build` 成功
+- `dotnet test` で全 309 件パス (動作変更なし)
+
+---
+
 ## v1.0.2 — 2026-06-10
 
 ### 変更概要

@@ -27,6 +27,7 @@
 | R1 | v1.0.0 リリース準備 | v1.0.0 (csproj `<Version>` 1.0.0 化、README / docs / release-notes を v1.0.0 時点に整理、`docs/test-scenarios.md` に Windows ビルド向けリリース前チェックリスト R1〜R12 を追加。`Assets/tutorial.png` の同梱状況など、本リポジトリの範囲外の確認項目は test-scenarios と release-notes で明示) |
 | U1 | タグパネルの視認性改善 | v1.0.1 (`MainWindow.xaml` のタグパネル `Border` に `SurfaceBrush` 背景と 1px の右側区切り線を追加。XAML のみの変更でレイアウトに影響なし) |
 | U2 | テキスト貼り付け / `.txt` ファイル D&D で新規カード作成 | v1.0.2 (`CardOperationsService` に `CommitAddFromText` / `CommitAddFromFileContent` を追加し、`MainViewModel` の `PasteAsNewCard` / `CreateCardsFromFiles` から呼び出し。Ctrl+V はテキスト入力中を除く一覧領域フォーカス時のみ。`.txt` を UTF-8 として読み込み、複数ファイル D&D も対応。読込失敗は警告ダイアログでまとめて通知) |
+| M14 | `*Service` クラスのフォルダ整理 | v1.0.3 (`CardOperationsService` / `TagSyncService` / `TagManagementService` を `ViewModels/` から `Services/` へ移動し namespace を `IdeaNest.Services` に統一。テストプロジェクトの `<Compile Include>` パスと 3 件のテストファイルの using も更新。動作変更なし) |
 
 ---
 
@@ -62,7 +63,6 @@
 | M9 | 重複アイデア検出 | タイトル・本文の類似度 (n-gram など) で近しいカードを候補として提示する。Duplicate フラグの設計や、どの時点で検出を走らせるかの判断が必要 | C |
 | M10 | 出力マーカー文言のカスタマイズ | NoteNest 向けエクスポートの `[NOTE]` / `[TODO]` 文言を自由入力で変更できるようにする。v0.3.1 では固定文字列 | C |
 | M13 | カード一覧の Masonry レイアウト | v0.7.3 の `VerticalAlignment="Top"` 修正後も、行内では各行の最も高いカード分のスペースが確保され、短文カードの直下に余白が残る。Google Keep のように次行のカードを詰めて配置するにはカスタム `Panel` (列ごとに最短列に追加するアルゴリズム) の実装が必要。`WrapPanel` を置き換えるため影響範囲が広く、優先度は中 | B |
-| M14 | `*Service` クラスのフォルダ整理 | `CardOperationsService` / `TagSyncService` / `TagManagementService` は名称が `*Service` ながら現在 `src/IdeaNest/ViewModels/` 下にある。`Services/` フォルダへ移動して `namespace IdeaNest.Services` へ統一する案。動作変更を伴わない純粋な整理だが、テストプロジェクトの `<Compile Include>` パス変更も発生するため v1.0.0 後にまとめて検討 | C |
 
 ### 高難易度
 

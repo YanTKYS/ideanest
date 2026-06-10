@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
+using IdeaNest.ViewModels;
 
-namespace IdeaNest.ViewModels;
+namespace IdeaNest.Services;
 
 /// <summary>
 /// WPF-free tag aggregation logic extracted from MainViewModel.RefreshTags().

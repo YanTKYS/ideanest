@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using IdeaNest.Models;
+using IdeaNest.Services;
 using IdeaNest.ViewModels;
 using Xunit;
 

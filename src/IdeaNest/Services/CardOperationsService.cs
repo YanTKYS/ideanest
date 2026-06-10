@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using IdeaNest.Models;
+using IdeaNest.ViewModels;
 
-namespace IdeaNest.ViewModels;
+namespace IdeaNest.Services;
 
 /// <summary>
 /// WPF-free card mutation logic extracted from MainViewModel.
