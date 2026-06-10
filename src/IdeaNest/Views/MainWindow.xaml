@@ -308,7 +308,10 @@
             </Grid.ColumnDefinitions>
 
             <!-- Tag side panel: Width="200" so Auto column uses exactly 200 when visible -->
-            <Border Grid.Column="0" Width="200" Background="Transparent" Padding="16,8,8,8"
+            <Border Grid.Column="0" Width="200"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0"
+                    Padding="16,8,8,8"
                     Visibility="{Binding IsTagPanelOpen, Converter={StaticResource BoolToVis}}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="タグ"
