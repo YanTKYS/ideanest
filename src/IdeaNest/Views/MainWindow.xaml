@@ -377,7 +377,10 @@
                 </DockPanel>
             </Border>
 
-            <Grid Grid.Column="1" x:Name="CardArea">
+            <Grid Grid.Column="1" x:Name="CardArea"
+                  AllowDrop="True"
+                  DragOver="OnCardAreaDragOver"
+                  Drop="OnCardAreaDrop">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,8,12,12"
                               Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisInverse}}">
                     <ItemsControl ItemsSource="{Binding VisibleCards}">

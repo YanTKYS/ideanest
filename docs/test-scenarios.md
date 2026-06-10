@@ -1,7 +1,7 @@
-# 手動テストシナリオ (v1.0.0)
+# 手動テストシナリオ (v1.0.2)
 
 Windows 上で `dotnet run --project src/IdeaNest/IdeaNest.csproj` を実行し、各シナリオを上から順に試す。
-すべてが成功すれば v1.0.0 の受入条件を満たしているとみなす。
+すべてが成功すれば v1.0.2 の受入条件を満たしているとみなす。
 
 | # | シナリオ | 操作 | 期待結果 |
 | --- | --- | --- | --- |
@@ -24,6 +24,12 @@ Windows 上で `dotnet run --project src/IdeaNest/IdeaNest.csproj` を実行し�
 | 17 | 読込できる (新規作成カードも保持される) | `ファイル > 新規作成` で空にしたあと `ファイル > 開く` から `test.ideanest` を選ぶ | カード一覧 / タグ一覧 / 検索文字列 / アーカイブ表示状態が復元され、`＋` ボタンで作ったカードも残っている |
 | 18 | 未保存変更がある状態で終了時に確認が出る | カードを追加し未保存のまま `×` で閉じる | 「未保存の変更があります。保存しますか？」の確認が出る / `キャンセル` で閉じない |
 | 19 | `.bak` が作成される | シナリオ 16 で保存した状態で再度何か編集して `保存` | 同じフォルダに `test.ideanest.bak` が出来ている (中身は直前の保存内容) |
+| 20 | クリップボード貼り付けで新規カードが作成される (v1.0.2) | 適当なテキストをコピー → メインウィンドウ (検索欄やダイアログは閉じる) で `Ctrl+V` | コピーしたテキストを本文に持つカードが追加される / タイトルは本文の 1 行目 (最大 40 文字) で自動生成 / `*` が付く |
+| 21 | テキスト入力中の `Ctrl+V` には影響しない (v1.0.2) | 検索欄 / 編集ダイアログのテキストにフォーカスを当てて `Ctrl+V` | 従来どおりその入力欄に貼り付けられる / 新規カードは作成されない |
+| 22 | `.txt` ファイル D&D で新規カードが作成される (v1.0.2) | エクスプローラから任意の `.txt` ファイルをカード一覧領域にドラッグ&ドロップ | ファイル内容を本文・拡張子なしのファイル名をタイトルに持つカードが追加される / `*` が付く |
+| 23 | `.txt` ファイル D&D を複数同時に行える (v1.0.2) | `.txt` ファイルを 2〜3 個まとめてドロップ | ファイルごとに 1 枚ずつカードが追加される / ステータスに `N件のテキストファイルからカードを作成しました` |
+| 24 | 読込失敗時にもアプリが落ちない (v1.0.2) | 読み込めないファイル (削除済み / 権限なし等) を含む `.txt` をドロップ | 警告ダイアログに失敗ファイル名と理由が表示され、成功分のカードはそのまま追加される / アプリは継続動作 |
+| 25 | `.txt` 以外のファイル D&D は無視される (v1.0.2) | `.png` / `.pdf` / `.docx` 等をドロップ | ドロップ中のカーソルが「拒否」表示になり、カードは作成されない |
 
 ## 見た目 (v0.1.2 で追加)
 
@@ -393,7 +399,7 @@ dotnet test
 
 | # | 観点 | 確認方法 | 期待結果 |
 | --- | --- | --- | --- |
-| UT1 | 単体テストがすべて成功する | `dotnet test` | `Passed!` で終了し、失敗が 0 件 / 全 304 件 (v1.0.0 時点) が緑 / `tests/IdeaNest.Tests` の `WorkspaceService` / `MarkdownExportService` / `NoteNestExportService` / `IdeaCardViewModel` / `CardDisplayViewModel` (v0.8.1 追加 / v0.8.7 で onMarkDirty 順序テスト 3 件追加) / `FilterViewModel` (v0.8.2 追加) / `TagPanelViewModel` (v0.8.3 追加) / `ExportViewModel` (v0.8.4 追加) / `RecentFilesService` / `StartupCoordinator` / `StartupViewModel` (v0.8.5 追加) / `SaveStateViewModel` (v0.8.6 追加 / v0.8.7 で `CanScheduleAutoSave` 通知テスト 7 件追加) / `CardOperationsService` / `TagSyncService` (v0.8.8 追加) / `TagManagementService` (v0.8.9 追加 / 戻り値契約修正で 2 件追加) の各テストが緑になる |
+| UT1 | 単体テストがすべて成功する | `dotnet test` | `Passed!` で終了し、失敗が 0 件 / 全 309 件 (v1.0.2 時点 / v1.0.0 304 件 + `CommitAddFromText` / `CommitAddFromFileContent` 5 件) が緑 / `tests/IdeaNest.Tests` の `WorkspaceService` / `MarkdownExportService` / `NoteNestExportService` / `IdeaCardViewModel` / `CardDisplayViewModel` (v0.8.1 追加 / v0.8.7 で onMarkDirty 順序テスト 3 件追加) / `FilterViewModel` (v0.8.2 追加) / `TagPanelViewModel` (v0.8.3 追加) / `ExportViewModel` (v0.8.4 追加) / `RecentFilesService` / `StartupCoordinator` / `StartupViewModel` (v0.8.5 追加) / `SaveStateViewModel` (v0.8.6 追加 / v0.8.7 で `CanScheduleAutoSave` 通知テスト 7 件追加) / `CardOperationsService` (v0.8.8 追加 / v1.0.2 で外部テキスト取り込み 5 件追加) / `TagSyncService` (v0.8.8 追加) / `TagManagementService` (v0.8.9 追加 / 戻り値契約修正で 2 件追加) の各テストが緑になる |
 | UT2 | テストプロジェクトが単体でビルドできる | `dotnet build tests/IdeaNest.Tests/IdeaNest.Tests.csproj` | エラー 0 件で成功する (WPF を参照していないため Windows 以外でも成功) |
 | UT3 | スモークテストとの併存 | `dotnet run --project tools/IdeaNest.Smoke` を従来どおり実行 | `ALL CHECKS PASSED` が表示される / 単体テスト追加後も挙動に変化がない |
 | UT4 | 既存本体のビルドへの影響なし | Windows 上で `dotnet build src/IdeaNest/IdeaNest.csproj` | 従来どおり成功する (`tests/` 配下を追加してもメインプロジェクトのビルドは変わらない) |
@@ -404,8 +410,8 @@ dotnet test
 
 | # | 観点 | 確認方法 | 期待結果 |
 | --- | --- | --- | --- |
-| R1 | バージョン表記 | `src/IdeaNest/IdeaNest.csproj` の `<Version>` を確認 | `1.0.0` になっている |
-| R2 | タイトルバー表示 | アプリ起動 | `IdeaNest - (未保存) - ver1.0.0` |
+| R1 | バージョン表記 | `src/IdeaNest/IdeaNest.csproj` の `<Version>` を確認 | `1.0.2` になっている |
+| R2 | タイトルバー表示 | アプリ起動 | `IdeaNest - (未保存) - ver1.0.2` |
 | R3 | リリースビルド成功 | `dotnet publish src/IdeaNest/IdeaNest.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true` | エラー 0 件で成功し、`bin/Release/net8.0-windows/win-x64/publish/IdeaNest.exe` が生成される |
 | R4 | チュートリアル画像が同梱されている | `src/IdeaNest/Assets/tutorial.png` の存在を確認 | ファイルが存在し、リリースビルドの埋め込みリソースとして含まれている。**注: 現在のリポジトリには `tutorial.png` がコミットされていない (`git ls-files` で未検出)。Windows ビルド前に画像を追加すること** |
 | R5 | アプリアイコンが同梱されている | `src/IdeaNest/Assets/app.ico` の存在と csproj `<ApplicationIcon>` 設定を確認 | ファイルが存在し、生成された `IdeaNest.exe` のアイコンが反映されている |
@@ -415,4 +421,5 @@ dotnet test
 | R9 | リリースビルドの依存確認 | `IdeaNest.exe` を別フォルダにコピーして起動 | 起動できる (依存 DLL がある場合はそれもコピー必要かを判断する) |
 | R10 | スタートダイアログの表示 | `IdeaNest.exe` を引数なしで起動 | スタートダイアログが表示される |
 | R11 | 引数あり起動 | `IdeaNest.exe "path\to\sample.ideanest"` | スタートダイアログを介さず指定ファイルが開く |
-| R12 | `dotnet build` / `dotnet test` 全件成功 | Linux または Windows で実施 | `dotnet build` 成功 / `dotnet test` で 304 件すべてパス |
+| R12 | `dotnet build` / `dotnet test` 全件成功 | Linux または Windows で実施 | `dotnet build` 成功 / `dotnet test` で 309 件すべてパス |
+| R13 | テキスト貼り付け・テキストファイル D&D (v1.0.2) | 本ドキュメントのシナリオ 20〜25 を順に実施 | すべての期待結果が満たされる / 既存の Ctrl+V 動作 (入力欄内貼り付け) に影響なし |

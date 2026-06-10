@@ -618,6 +618,64 @@ public class MainViewModel : ViewModelBase
 
     public void DeleteTag(string tagName) => _tagMgmt.DeleteTag(tagName);
 
+    /// <summary>
+    /// Creates a new card from the current clipboard text. No-op when the
+    /// clipboard has no text. Used by Ctrl+V on the main card area.
+    /// </summary>
+    public bool PasteAsNewCard()
+    {
+        string text;
+        try
+        {
+            if (!Clipboard.ContainsText()) return false;
+            text = Clipboard.GetText();
+        }
+        catch
+        {
+            // Clipboard access can occasionally fail with COMException; treat as no-op.
+            return false;
+        }
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var ok = _cardOps.CommitAddFromText(text);
+        if (ok) ShowStatus("クリップボードのテキストからカードを作成しました");
+        return ok;
+    }
+
+    /// <summary>
+    /// Creates one card per dropped text file. Reads each file as UTF-8;
+    /// failures are collected and surfaced via a single MessageBox at the end
+    /// so a bad file does not abort the rest.
+    /// </summary>
+    public int CreateCardsFromFiles(IEnumerable<string> filePaths)
+    {
+        var created = 0;
+        var errors = new List<string>();
+        foreach (var path in filePaths)
+        {
+            try
+            {
+                var body = File.ReadAllText(path, System.Text.Encoding.UTF8);
+                var title = Path.GetFileNameWithoutExtension(path);
+                if (_cardOps.CommitAddFromFileContent(title, body)) created++;
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"{Path.GetFileName(path)}: {ex.Message}");
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            MessageBox.Show(
+                "次のファイルを読み込めませんでした:\n\n" + string.Join("\n", errors),
+                "IdeaNest",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        if (created > 0) ShowStatus($"{created}件のテキストファイルからカードを作成しました");
+        return created;
+    }
+
     private void RefreshVisible()
     {
         var query = (SearchText ?? string.Empty).Trim();

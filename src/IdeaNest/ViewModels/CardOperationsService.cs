@@ -66,6 +66,28 @@ public class CardOperationsService
     }
 
     /// <summary>
+    /// Creates a new card from a pasted text block. The title is auto-generated
+    /// from the first line via CommitAdd's existing rule. Returns false when
+    /// the body is empty or whitespace.
+    /// </summary>
+    public bool CommitAddFromText(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return false;
+        return CommitAdd(new Idea { Body = body });
+    }
+
+    /// <summary>
+    /// Creates a new card from an imported text file. The title is taken from
+    /// the file name (without extension); the body is the file contents.
+    /// Returns false when both end up empty (e.g. blank file with empty name).
+    /// </summary>
+    public bool CommitAddFromFileContent(string fileName, string body)
+    {
+        var title = string.IsNullOrWhiteSpace(fileName) ? string.Empty : fileName;
+        return CommitAdd(new Idea { Title = title, Body = body ?? string.Empty });
+    }
+
+    /// <summary>
     /// Applies a timestamp bump and UI refresh after an edit dialog was confirmed.
     /// The caller must call vm.ApplyTo(card.Model) before this.
     /// </summary>
