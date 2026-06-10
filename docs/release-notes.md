@@ -17,7 +17,11 @@
   - `MainViewModel.cs` はすでに `using IdeaNest.Services;` を持つため変更なし。
   - テストプロジェクト (`IdeaNest.Tests.csproj`) の `<Compile Include>` パスを
     `ViewModels\*` → `Services\*` に更新。
-  - テストファイル 3 件に `using IdeaNest.Services;` を追加。
+  - テストファイル 3 件 (`CardOperationsServiceTests` / `TagSyncServiceTests` /
+    `TagManagementServiceTests`) を `tests/IdeaNest.Tests/ViewModels/` から
+    `tests/IdeaNest.Tests/Services/` へ移動し、namespace も
+    `IdeaNest.Tests.ViewModels` → `IdeaNest.Tests.Services` に統一。
+    `using IdeaNest.Services;` を追加。
 
 ### 確認したこと
 

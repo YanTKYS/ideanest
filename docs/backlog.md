@@ -27,7 +27,7 @@
 | R1 | v1.0.0 リリース準備 | v1.0.0 (csproj `<Version>` 1.0.0 化、README / docs / release-notes を v1.0.0 時点に整理、`docs/test-scenarios.md` に Windows ビルド向けリリース前チェックリスト R1〜R12 を追加。`Assets/tutorial.png` の同梱状況など、本リポジトリの範囲外の確認項目は test-scenarios と release-notes で明示) |
 | U1 | タグパネルの視認性改善 | v1.0.1 (`MainWindow.xaml` のタグパネル `Border` に `SurfaceBrush` 背景と 1px の右側区切り線を追加。XAML のみの変更でレイアウトに影響なし) |
 | U2 | テキスト貼り付け / `.txt` ファイル D&D で新規カード作成 | v1.0.2 (`CardOperationsService` に `CommitAddFromText` / `CommitAddFromFileContent` を追加し、`MainViewModel` の `PasteAsNewCard` / `CreateCardsFromFiles` から呼び出し。Ctrl+V はテキスト入力中を除く一覧領域フォーカス時のみ。`.txt` を UTF-8 として読み込み、複数ファイル D&D も対応。読込失敗は警告ダイアログでまとめて通知) |
-| M14 | `*Service` クラスのフォルダ整理 | v1.0.3 (`CardOperationsService` / `TagSyncService` / `TagManagementService` を `ViewModels/` から `Services/` へ移動し namespace を `IdeaNest.Services` に統一。テストプロジェクトの `<Compile Include>` パスと 3 件のテストファイルの using も更新。動作変更なし) |
+| M14 | `*Service` クラスのフォルダ整理 | v1.0.3 (`CardOperationsService` / `TagSyncService` / `TagManagementService` を `ViewModels/` から `Services/` へ移動し namespace を `IdeaNest.Services` に統一。テストプロジェクトの `<Compile Include>` パスと 3 件のテストファイルの using も更新。対応するテストファイル 3 件も `tests/IdeaNest.Tests/ViewModels/` から `tests/IdeaNest.Tests/Services/` へ移動し namespace を `IdeaNest.Tests.Services` に統一。動作変更なし) |
 
 ---
 
