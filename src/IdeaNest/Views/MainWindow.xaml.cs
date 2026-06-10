@@ -1,5 +1,9 @@
+using System;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -32,6 +36,16 @@ public partial class MainWindow : Window
         {
             FocusSearch();
             e.Handled = true;
+            return;
+        }
+
+        // Ctrl+V: create a new card from clipboard text.
+        // Skip when an editable control (TextBox / search bar / dialog input) has focus
+        // so paste keeps working inside text inputs.
+        if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            if (e.OriginalSource is TextBoxBase) return;
+            if (_vm.PasteAsNewCard()) e.Handled = true;
         }
     }
 
@@ -115,5 +129,34 @@ public partial class MainWindow : Window
             if (d is ButtonBase) return true;
         }
         return false;
+    }
+
+    private void OnCardAreaDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = HasAcceptableDropPayload(e.Data) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnCardAreaDrop(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+        var paths = e.Data.GetData(DataFormats.FileDrop) as string[] ?? Array.Empty<string>();
+        var textFiles = paths.Where(IsAcceptableTextFile).ToArray();
+        if (textFiles.Length == 0) return;
+        _vm.CreateCardsFromFiles(textFiles);
+        e.Handled = true;
+    }
+
+    private static bool HasAcceptableDropPayload(IDataObject data)
+    {
+        if (!data.GetDataPresent(DataFormats.FileDrop)) return false;
+        var paths = data.GetData(DataFormats.FileDrop) as string[];
+        return paths != null && paths.Any(IsAcceptableTextFile);
+    }
+
+    private static bool IsAcceptableTextFile(string path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) return false;
+        return string.Equals(Path.GetExtension(path), ".txt", StringComparison.OrdinalIgnoreCase);
     }
 }

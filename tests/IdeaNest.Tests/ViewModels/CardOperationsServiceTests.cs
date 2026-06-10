@@ -124,6 +124,80 @@ public class CardOperationsServiceTests
         Assert.Equal(1, c.Visible);
     }
 
+    // ── CommitAddFromText ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void CommitAddFromText_Empty_ReturnsFalseAndDoesNotAdd()
+    {
+        var ideas    = new List<Idea>();
+        var allCards = new ObservableCollection<IdeaCardViewModel>();
+        var svc = MakeSvc(out var c, ideas: ideas, allCards: allCards);
+
+        Assert.False(svc.CommitAddFromText(""));
+        Assert.False(svc.CommitAddFromText("   \n  "));
+        Assert.Empty(ideas);
+        Assert.Empty(allCards);
+        Assert.Equal(0, c.Dirty);
+    }
+
+    [Fact]
+    public void CommitAddFromText_AddsCardWithBodyAndAutoTitle()
+    {
+        var ideas    = new List<Idea>();
+        var allCards = new ObservableCollection<IdeaCardViewModel>();
+        var svc = MakeSvc(out var c, ideas: ideas, allCards: allCards);
+
+        var body = "Pasted heading\nrest of clipboard";
+        Assert.True(svc.CommitAddFromText(body));
+
+        Assert.Single(ideas);
+        Assert.Equal(body, ideas[0].Body);
+        Assert.Equal("Pasted heading", ideas[0].Title);
+        Assert.Equal(1, c.Dirty);
+        Assert.Equal(1, c.Tags);
+        Assert.Equal(1, c.Visible);
+    }
+
+    // ── CommitAddFromFileContent ──────────────────────────────────────────────
+
+    [Fact]
+    public void CommitAddFromFileContent_UsesFileNameAsTitleAndContentAsBody()
+    {
+        var ideas    = new List<Idea>();
+        var allCards = new ObservableCollection<IdeaCardViewModel>();
+        var svc = MakeSvc(out var c, ideas: ideas, allCards: allCards);
+
+        Assert.True(svc.CommitAddFromFileContent("meeting-notes", "line 1\nline 2"));
+
+        Assert.Single(ideas);
+        Assert.Equal("meeting-notes", ideas[0].Title);
+        Assert.Equal("line 1\nline 2", ideas[0].Body);
+        Assert.Equal(1, c.Dirty);
+    }
+
+    [Fact]
+    public void CommitAddFromFileContent_EmptyBodyButTitled_StillAdds()
+    {
+        var ideas    = new List<Idea>();
+        var svc = MakeSvc(ideas: ideas);
+
+        Assert.True(svc.CommitAddFromFileContent("empty", ""));
+
+        Assert.Single(ideas);
+        Assert.Equal("empty", ideas[0].Title);
+        Assert.Equal("", ideas[0].Body);
+    }
+
+    [Fact]
+    public void CommitAddFromFileContent_BothEmpty_ReturnsFalse()
+    {
+        var ideas = new List<Idea>();
+        var svc = MakeSvc(ideas: ideas);
+
+        Assert.False(svc.CommitAddFromFileContent("", ""));
+        Assert.Empty(ideas);
+    }
+
     // ── CommitEdit ────────────────────────────────────────────────────────────
 
     [Fact]
