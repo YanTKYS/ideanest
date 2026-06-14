@@ -138,3 +138,10 @@ IdeaNest の設計方針から意図的に除外しているもの。要望が�
 - **次候補**: AppShell / WorkspaceView 境界のWindows実機回帰確認。
 - **将来**: NestSuiteタブ内表示検証、共通Workspace契約の検討。
 - **当面見送り**: NestSuite本体接続、共通ライブラリ化、保存形式変更。
+
+
+### v1.1.x ホスト再利用準備の次候補
+
+- **v1.1.x 次候補**: NestSuite試験配置の前提整理。
+- **将来**: NestSuiteタブ内での `IdeaNestWorkspaceView` 表示検証、共通Workspace契約の検討。
+- **当面見送り**: NestSuite本体接続、共通ライブラリ化、保存形式変更。

@@ -20,6 +20,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
     private TagManagementService _tagMgmt = null!; // assigned in constructor
     private DispatcherTimer? _statusClearTimer;
     private string _statusMessage = string.Empty;
+    private readonly WorkspaceUiService _ui;
 
     public CardDisplayViewModel CardDisplay { get; }
     public FilterViewModel Filter { get; }
@@ -129,10 +130,12 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
     public ICommand SetCardSizeCommand { get; }
     public ICommand SetCardHeightModeCommand { get; }
     public ICommand ReshuffleCommand { get; }
-    public ICommand? NewWorkspaceCommand { get; private set; }
-    public ICommand? OpenCommand { get; private set; }
-    public ICommand? SaveCommand { get; private set; }
-    public ICommand? SaveAsCommand { get; private set; }
+    public IdeaNestWorkspaceHostCommands HostCommands { get; private set; } = new();
+    public ICommand? NewWorkspaceCommand => HostCommands.NewWorkspace;
+    public ICommand? OpenCommand => HostCommands.Open;
+    public ICommand? SaveCommand => HostCommands.Save;
+    public ICommand? SaveAsCommand => HostCommands.SaveAs;
+    public string DisplayName => _workspace.WorkspaceName;
 
     public string StatusMessage
     {
@@ -142,6 +145,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
 
     public int TotalCount => AllCards.Count;
     public int VisibleCount => VisibleCards.Count;
+    public int VisibleCardCount => VisibleCount;
 
     public string CountText
     {
@@ -183,8 +187,11 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
         }
     }
 
-    public IdeaNestWorkspaceViewModel()
+    public IdeaNestWorkspaceViewModel() : this(new WorkspaceUiService()) { }
+
+    public IdeaNestWorkspaceViewModel(WorkspaceUiService ui)
     {
+        _ui = ui;
         CardDisplay = new CardDisplayViewModel(RefreshVisible, OnCardDisplayChanged);
         CardDisplay.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
@@ -200,7 +207,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
             getVisibleCards: () => VisibleCards,
             getFilterContext: () => new ExportFilterContext(
                 SearchText, SelectedTag, SelectedColor, ShowArchived),
-            platform: new WpfExportPlatform(),
+            platform: new WpfExportPlatform(_ui),
             showStatus: ShowStatus);
 
         AddIdeaCommand         = new RelayCommand(_ => AddIdea());
@@ -247,6 +254,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(TotalCount));
         OnPropertyChanged(nameof(VisibleCount));
+        OnPropertyChanged(nameof(VisibleCardCount));
         OnPropertyChanged(nameof(HasActiveFilter));
         OnPropertyChanged(nameof(CountText));
         OnPropertyChanged(nameof(ShowEmptyState));
@@ -262,7 +270,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
         {
             Title = "新規アイデア",
             DataContext = vm,
-            Owner = Application.Current?.MainWindow,
+            Owner = _ui.Owner,
         };
         if (dlg.ShowDialog() != true) return;
 
@@ -288,7 +296,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
             onToggleArchive: c => ToggleArchive(c),
             onCopyMarkdown: c => Export.CopyCardMarkdown(c))
         {
-            Owner = Application.Current?.MainWindow,
+            Owner = _ui.Owner,
         };
         // Preview itself does not mutate state — IsDirty is only set by the
         // delegated actions (EditIdea / TogglePin / ToggleArchive) when invoked.
@@ -310,7 +318,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
         {
             Title = "アイデア編集",
             DataContext = vm,
-            Owner = owner ?? Application.Current?.MainWindow,
+            Owner = owner ?? _ui.Owner,
         };
         if (dlg.ShowDialog() != true) return;
         vm.ApplyTo(card.Model);
@@ -321,7 +329,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
     {
         if (card == null) return;
         var ok = ConfirmWindow.ShowOkCancel(
-            Application.Current?.MainWindow,
+            _ui.Owner,
             "このカードを削除しますか？",
             $"「{card.DisplayTitle}」を削除します。削除すると元に戻せません。\n\n" +
             "不要な場合は、削除ではなくアーカイブ (📥) も検討してください。",
@@ -351,21 +359,17 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
     /// Supplies standalone AppShell commands used by the menu hosted in this
     /// first-stage workspace view. The workspace never performs file I/O itself.
     /// </summary>
-    public void AttachAppShellCommands(
-        ICommand newWorkspaceCommand,
-        ICommand openCommand,
-        ICommand saveCommand,
-        ICommand saveAsCommand)
+    public void SetHostCommands(IdeaNestWorkspaceHostCommands commands)
     {
-        NewWorkspaceCommand = newWorkspaceCommand;
-        OpenCommand = openCommand;
-        SaveCommand = saveCommand;
-        SaveAsCommand = saveAsCommand;
+        HostCommands = commands ?? new IdeaNestWorkspaceHostCommands();
+        OnPropertyChanged(nameof(HostCommands));
         OnPropertyChanged(nameof(NewWorkspaceCommand));
         OnPropertyChanged(nameof(OpenCommand));
         OnPropertyChanged(nameof(SaveCommand));
         OnPropertyChanged(nameof(SaveAsCommand));
     }
+
+    public void SetOwnerResolver(Func<Window?> resolver) => _ui.SetOwnerResolver(resolver);
 
     private void OnFilterChanged()
     {
@@ -389,6 +393,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
     {
         _workspace = workspace ?? new Workspace();
         ReloadFromWorkspace();
+        OnPropertyChanged(nameof(DisplayName));
     }
 
     public Workspace BuildWorkspaceForSave()
@@ -434,7 +439,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
     {
         var dlg = new Views.TagManagementWindow(this)
         {
-            Owner = Application.Current?.MainWindow,
+            Owner = _ui.Owner,
         };
         dlg.ShowDialog();
     }
@@ -468,8 +473,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
         string text;
         try
         {
-            if (!Clipboard.ContainsText()) return false;
-            text = Clipboard.GetText();
+            text = _ui.GetClipboardText() ?? string.Empty;
         }
         catch
         {
@@ -507,11 +511,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
 
         if (errors.Count > 0)
         {
-            MessageBox.Show(
-                "次のファイルを読み込めませんでした:\n\n" + string.Join("\n", errors),
-                "IdeaNest",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            _ui.ShowWarning("次のファイルを読み込めませんでした:\n\n" + string.Join("\n", errors));
         }
         if (created > 0) ShowStatus($"{created}件のテキストファイルからカードを作成しました");
         return created;

@@ -12,5 +12,5 @@
         <KeyBinding Modifiers="Ctrl+Shift" Key="S" Command="{Binding SaveAsCommand}" />
 
     </Window.InputBindings>
-    <views:IdeaNestWorkspaceView DataContext="{Binding Workspace}" />
+    <views:IdeaNestWorkspaceView DataContext="{Binding Workspace}" ShowMenu="True" />
 </Window>

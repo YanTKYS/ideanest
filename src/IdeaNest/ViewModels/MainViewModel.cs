@@ -25,6 +25,8 @@ public class MainViewModel : ViewModelBase
     public ICommand OpenCommand { get; }
     public ICommand SaveCommand { get; }
     public ICommand SaveAsCommand { get; }
+    public ICommand ShowTutorialCommand { get; }
+    public ICommand ExitCommand { get; }
 
     public string? CurrentFilePath => SaveState.CurrentFilePath;
     public bool IsDirty => SaveState.IsDirty;
@@ -53,13 +55,29 @@ public class MainViewModel : ViewModelBase
         OpenCommand = new RelayCommand(_ => Open());
         SaveCommand = new RelayCommand(_ => Save());
         SaveAsCommand = new RelayCommand(_ => SaveAs());
-        Workspace.AttachAppShellCommands(NewWorkspaceCommand, OpenCommand, SaveCommand, SaveAsCommand);
+        ShowTutorialCommand = new RelayCommand(_ => ShowTutorial());
+        ExitCommand = new RelayCommand(_ => Application.Current?.MainWindow?.Close());
+        Workspace.SetHostCommands(new IdeaNestWorkspaceHostCommands
+        {
+            NewWorkspace = NewWorkspaceCommand,
+            Open = OpenCommand,
+            Save = SaveCommand,
+            SaveAs = SaveAsCommand,
+            ShowTutorial = ShowTutorialCommand,
+            Exit = ExitCommand,
+        });
     }
 
     private static string FormatAppVersion()
     {
         var v = Assembly.GetExecutingAssembly().GetName().Version;
         return v != null ? $"ver{v.Major}.{v.Minor}.{v.Build}" : string.Empty;
+    }
+
+    private static void ShowTutorial()
+    {
+        var window = new TutorialWindow { Owner = Application.Current?.MainWindow };
+        window.ShowDialog();
     }
 
     private void NewWorkspace()

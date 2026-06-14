@@ -11,7 +11,8 @@
     </UserControl.InputBindings>
     <DockPanel>
         <!-- Menu (kept minimal: no border below) -->
-        <Menu DockPanel.Dock="Top" Background="Transparent" Padding="4,2">
+        <Menu x:Name="WorkspaceMenu" DockPanel.Dock="Top" Background="Transparent" Padding="4,2"
+              Visibility="{Binding ShowMenu, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}">
             <MenuItem Header="ファイル(_F)">
                 <MenuItem Header="新規作成(_N)" InputGestureText="Ctrl+N" Command="{Binding NewWorkspaceCommand}" />
                 <MenuItem Header="開く(_O)..." InputGestureText="Ctrl+O" Command="{Binding OpenCommand}" />

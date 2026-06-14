@@ -13,14 +13,30 @@ namespace IdeaNest.Views;
 
 public partial class IdeaNestWorkspaceView : UserControl
 {
+    public static readonly DependencyProperty ShowMenuProperty = DependencyProperty.Register(
+        nameof(ShowMenu), typeof(bool), typeof(IdeaNestWorkspaceView),
+        new PropertyMetadata(true));
+
+    public bool ShowMenu
+    {
+        get => (bool)GetValue(ShowMenuProperty);
+        set => SetValue(ShowMenuProperty, value);
+    }
+
     private IdeaNestWorkspaceViewModel Workspace => (IdeaNestWorkspaceViewModel)DataContext;
 
     public IdeaNestWorkspaceView()
     {
         InitializeComponent();
         PreviewKeyDown += OnWindowPreviewKeyDown;
-        Loaded += (_, _) => CardArea.Focus();
+        Loaded += (_, _) =>
+        {
+            Workspace.SetOwnerResolver(() => Window.GetWindow(this));
+            FocusWorkspace();
+        };
     }
+
+    public void FocusWorkspace() => CardArea.Focus();
 
     private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
@@ -71,13 +87,12 @@ public partial class IdeaNestWorkspaceView : UserControl
 
     private void OnExitClick(object sender, RoutedEventArgs e)
     {
-        Window.GetWindow(this)?.Close();
+        Workspace.HostCommands.Exit?.Execute(null);
     }
 
     private void OnTutorialClick(object sender, RoutedEventArgs e)
     {
-        var window = new TutorialWindow { Owner = Window.GetWindow(this) };
-        window.ShowDialog();
+        Workspace.HostCommands.ShowTutorial?.Execute(null);
     }
 
     private void OnCardMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
