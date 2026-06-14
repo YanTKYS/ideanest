@@ -1,5 +1,35 @@
 # リリースノート
 
+## v1.1.1 — 2026-06-14
+
+### AppShell / WorkspaceView 境界の整理
+
+- ファイルの読込・保存・名前を付けて保存、最近使ったファイル更新、自動保存タイマー、未保存確認、タイトル・保存状態を `MainViewModel` に集約しました。
+- `IdeaNestWorkspaceViewModel` は読み込まれたWorkspaceデータの表示・カード編集・整理を担当し、`LoadFromWorkspace` / `BuildWorkspaceForSave` / dirty通知でAppShellと連携します。
+- `.ideanest` 保存形式、NestSuite接続、UI、既存機能は変更していません。
+
+---
+
+## v1.1.0 — 2026-06-14
+
+### 変更概要
+
+将来 NestSuite のタブ内で IdeaNest の作業画面を再利用できるよう、AppShell / `IdeaNestWorkspaceView` の責務分離を開始しました。第1段階では IdeaNest 単体アプリとしての既存動作とUIを維持することを優先しています。
+
+### 変更内容
+
+- 従来の作業画面を独立した `IdeaNestWorkspaceView` UserControlへ移し、`MainWindow` は単体アプリのホストに整理しました。
+- カード編集・整理、検索・フィルタ、タグ、表示、エクスポートの状態と操作を `IdeaNestWorkspaceViewModel` に移しました。
+- `MainViewModel` は既存バインディングとの互換性を保ちながら `Workspace` を公開するAppShell側の入口に整理しました。
+- 起動、スタートダイアログ、ファイル読み込み・保存、自動保存、未保存確認、終了処理など、IdeaNest単体アプリの既存挙動を維持しています。
+
+### 対象外・互換性
+
+- NestSuite本体との接続、NestSuite用タブUI、共通Workspace契約、新機能は追加していません。
+- `.ideanest` 保存形式は変更していません。
+
+---
+
 ## v1.0.3 — 2026-06-10
 
 ### 変更概要
