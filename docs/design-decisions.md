@@ -638,3 +638,8 @@ v0.2.0 でのタグ正規化は「前後空白除去」「先頭 `#` 除去」�
 - `MainViewModel` には AppShell として必要な外枠制御との互換入口を残し、`Workspace` を公開する。
 - `IdeaNestWorkspaceViewModel` にはカード編集・整理、検索・フィルタ、タグ、表示、エクスポートの中核を寄せる。
 - 第1段階では既存バインディングと保存挙動を安全に保つため継承による薄い互換層を採用し、過剰な `IWorkspace` 等の共通インターフェースは導入しない。
+
+
+## AppShell / WorkspaceView 境界の明確化 (v1.1.1)
+
+v1.1.0でWorkspaceView化の足場を作り、v1.1.1ではファイル操作・保存・自動保存・終了確認・保存状態をAppShell (`MainViewModel`) 側へ寄せた。`IdeaNestWorkspaceViewModel` はカード編集・整理の中核に寄せ、Workspaceデータの受け渡しとdirty通知でAppShellと連携する。NestSuite接続はまだ行わず、必要性が確定していない過剰な共通インターフェースも導入しない。

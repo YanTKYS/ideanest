@@ -131,3 +131,10 @@ IdeaNest の設計方針から意図的に除外しているもの。要望が�
 - **将来**: NestSuite タブ内での `IdeaNestWorkspaceView` 表示を検証する。
 - **将来**: 複数 Nest アプリで必要性が確認できた時点で共通 Workspace 契約を検討する。
 - **当面見送り**: NestSuite 本体接続、共通ライブラリ化、`.ideanest` 保存形式変更。
+
+
+### v1.1.x 境界整理の次候補
+
+- **次候補**: AppShell / WorkspaceView 境界のWindows実機回帰確認。
+- **将来**: NestSuiteタブ内表示検証、共通Workspace契約の検討。
+- **当面見送り**: NestSuite本体接続、共通ライブラリ化、保存形式変更。

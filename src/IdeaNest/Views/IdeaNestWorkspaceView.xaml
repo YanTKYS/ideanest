@@ -278,7 +278,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding SaveStatusText}"
+                <TextBlock Grid.Column="0" Text="{Binding DataContext.SaveStatusText, RelativeSource={RelativeSource AncestorType=Window}}"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="12" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="1" Text="{Binding StatusMessage}"

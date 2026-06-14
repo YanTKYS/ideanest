@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -11,7 +10,6 @@ using IdeaNest.Commands;
 using IdeaNest.Models;
 using IdeaNest.Services;
 using IdeaNest.Views;
-using Microsoft.Win32;
 
 namespace IdeaNest.ViewModels;
 
@@ -20,12 +18,9 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
     private Workspace _workspace = new();
     private CardOperationsService _cardOps = null!; // assigned in constructor, re-created by ReloadFromWorkspace
     private TagManagementService _tagMgmt = null!; // assigned in constructor
-    private DispatcherTimer? _autoSaveTimer;
     private DispatcherTimer? _statusClearTimer;
     private string _statusMessage = string.Empty;
-    private static readonly TimeSpan AutoSaveDelay = TimeSpan.FromSeconds(2);
 
-    public SaveStateViewModel SaveState { get; }
     public CardDisplayViewModel CardDisplay { get; }
     public FilterViewModel Filter { get; }
     public TagPanelViewModel TagPanel { get; }
@@ -67,33 +62,6 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
         new ColorFilterItemViewModel("gray",   "グレー"),
     };
 
-    private static readonly string AppVersion = FormatAppVersion();
-
-    private static string FormatAppVersion()
-    {
-        var v = Assembly.GetExecutingAssembly().GetName().Version;
-        return v != null ? $"ver{v.Major}.{v.Minor}.{v.Build}" : string.Empty;
-    }
-
-    public string Title
-    {
-        get
-        {
-            var fileLabel = string.IsNullOrEmpty(SaveState.CurrentFilePath)
-                ? "(未保存)"
-                : Path.GetFileName(SaveState.CurrentFilePath);
-            var dirtyMark = SaveState.IsDirty ? "*" : string.Empty;
-            return $"IdeaNest - {fileLabel}{dirtyMark} - {AppVersion}";
-        }
-    }
-
-    // ── Save state: forward to SaveState sub-ViewModel ────────────────────────
-    // Logic (dirty tracking, auto-save state, status text) lives in SaveStateViewModel.
-    // These thin forwards keep existing XAML bindings working without change.
-
-    public string? CurrentFilePath => SaveState.CurrentFilePath;
-    public bool IsDirty => SaveState.IsDirty;
-    public string SaveStatusText => SaveState.SaveStatusText;
 
     // ── Filter state: forward to Filter sub-ViewModel ────────────────────────
     // Logic (callback invocation, HasActiveFilter) lives in FilterViewModel.
@@ -140,10 +108,6 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
 
     public WorkspaceSettings Settings => _workspace.Settings;
 
-    public ICommand NewWorkspaceCommand { get; }
-    public ICommand OpenCommand { get; }
-    public ICommand SaveCommand { get; }
-    public ICommand SaveAsCommand { get; }
     public ICommand AddIdeaCommand { get; }
     public ICommand EditIdeaCommand { get; }
     public ICommand PreviewIdeaCommand { get; }
@@ -165,6 +129,10 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
     public ICommand SetCardSizeCommand { get; }
     public ICommand SetCardHeightModeCommand { get; }
     public ICommand ReshuffleCommand { get; }
+    public ICommand? NewWorkspaceCommand { get; private set; }
+    public ICommand? OpenCommand { get; private set; }
+    public ICommand? SaveCommand { get; private set; }
+    public ICommand? SaveAsCommand { get; private set; }
 
     public string StatusMessage
     {
@@ -217,19 +185,6 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
 
     public IdeaNestWorkspaceViewModel()
     {
-        SaveState = new SaveStateViewModel();
-        SaveState.PropertyChanged += (_, e) =>
-        {
-            // Relay all SaveState property changes to MainViewModel's bindings.
-            OnPropertyChanged(e.PropertyName);
-            // Title depends on CurrentFilePath and IsDirty; re-raise it when either changes.
-            if (e.PropertyName is nameof(SaveStateViewModel.CurrentFilePath)
-                               or nameof(SaveStateViewModel.IsDirty))
-            {
-                OnPropertyChanged(nameof(Title));
-            }
-        };
-
         CardDisplay = new CardDisplayViewModel(RefreshVisible, OnCardDisplayChanged);
         CardDisplay.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
@@ -248,10 +203,6 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
             platform: new WpfExportPlatform(),
             showStatus: ShowStatus);
 
-        NewWorkspaceCommand    = new RelayCommand(_ => NewWorkspace());
-        OpenCommand            = new RelayCommand(_ => Open());
-        SaveCommand            = new RelayCommand(_ => Save());
-        SaveAsCommand          = new RelayCommand(_ => SaveAs());
         AddIdeaCommand         = new RelayCommand(_ => AddIdea());
         EditIdeaCommand        = new RelayCommand(p => EditIdea(p as IdeaCardViewModel));
         PreviewIdeaCommand     = new RelayCommand(p => PreviewIdea(p as IdeaCardViewModel));
@@ -301,111 +252,6 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowEmptyState));
         OnPropertyChanged(nameof(EmptyStateTitle));
         OnPropertyChanged(nameof(EmptyStateMessage));
-    }
-
-    private void NewWorkspace()
-    {
-        if (!ConfirmDiscardChanges()) return;
-        _workspace = new Workspace();
-        _autoSaveTimer?.Stop();
-        SaveState.Reset();
-        ReloadFromWorkspace();
-    }
-
-    private void Open()
-    {
-        if (!ConfirmDiscardChanges()) return;
-        var dlg = new OpenFileDialog
-        {
-            Filter = "IdeaNest files (*.ideanest)|*.ideanest|All files (*.*)|*.*",
-            DefaultExt = ".ideanest",
-        };
-        if (dlg.ShowDialog() != true) return;
-        try
-        {
-            _workspace = WorkspaceService.Load(dlg.FileName);
-            _autoSaveTimer?.Stop();
-            SaveState.OnFileLoaded(dlg.FileName);
-            ReloadFromWorkspace();
-            AppSettingsService.AddRecentFile(dlg.FileName);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"ファイルを開けませんでした:\n{ex.Message}", "IdeaNest", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    public bool Save()
-    {
-        if (string.IsNullOrEmpty(CurrentFilePath))
-        {
-            return SaveAs();
-        }
-        return SaveTo(CurrentFilePath);
-    }
-
-    public bool SaveAs()
-    {
-        var dlg = new SaveFileDialog
-        {
-            Filter = "IdeaNest files (*.ideanest)|*.ideanest",
-            DefaultExt = ".ideanest",
-            FileName = string.IsNullOrEmpty(CurrentFilePath) ? "ideas.ideanest" : Path.GetFileName(CurrentFilePath),
-        };
-        if (dlg.ShowDialog() != true) return false;
-        var ok = SaveTo(dlg.FileName);
-        if (ok) AppSettingsService.AddRecentFile(dlg.FileName);
-        return ok;
-    }
-
-    private bool SaveTo(string path)
-    {
-        try
-        {
-            SyncWindowSizeBeforeSave();
-            WorkspaceService.Save(path, _workspace);
-            _autoSaveTimer?.Stop();
-            SaveState.OnManualSaveSuccess(path);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            // Manual save failure is surfaced via MessageBox only.
-            // SaveStatusText is unchanged because SaveState is left unmodified.
-            MessageBox.Show($"保存に失敗しました:\n{ex.Message}", "IdeaNest", MessageBoxButton.OK, MessageBoxImage.Error);
-            return false;
-        }
-    }
-
-    private void SyncWindowSizeBeforeSave()
-    {
-        var win = Application.Current?.MainWindow;
-        if (win != null)
-        {
-            _workspace.Settings.WindowWidth = win.ActualWidth;
-            _workspace.Settings.WindowHeight = win.ActualHeight;
-        }
-        Filter.SyncToSettings(_workspace.Settings);
-        TagPanel.SyncToSettings(_workspace.Settings);
-        CardDisplay.SyncToSettings(_workspace.Settings);
-    }
-
-    public bool ConfirmDiscardChanges()
-    {
-        if (!IsDirty) return true;
-        var result = ConfirmWindow.ShowYesNoCancel(
-            Application.Current?.MainWindow,
-            "未保存の変更があります",
-            "保存していない変更があります。保存しますか？",
-            primaryText: "保存して続行",
-            secondaryText: "保存しない",
-            cancelText: "キャンセル");
-        return result switch
-        {
-            ConfirmResult.Primary    => Save(),
-            ConfirmResult.Secondary  => true,
-            _                        => false,
-        };
     }
 
     private void AddIdea()
@@ -497,10 +343,28 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
         _cardOps.ToggleArchive(card);
     }
 
-    public void MarkDirty()
+    public event EventHandler? DirtyRequested;
+
+    public void MarkDirty() => DirtyRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>
+    /// Supplies standalone AppShell commands used by the menu hosted in this
+    /// first-stage workspace view. The workspace never performs file I/O itself.
+    /// </summary>
+    public void AttachAppShellCommands(
+        ICommand newWorkspaceCommand,
+        ICommand openCommand,
+        ICommand saveCommand,
+        ICommand saveAsCommand)
     {
-        SaveState.MarkDirty();
-        ScheduleAutoSave();
+        NewWorkspaceCommand = newWorkspaceCommand;
+        OpenCommand = openCommand;
+        SaveCommand = saveCommand;
+        SaveAsCommand = saveAsCommand;
+        OnPropertyChanged(nameof(NewWorkspaceCommand));
+        OnPropertyChanged(nameof(OpenCommand));
+        OnPropertyChanged(nameof(SaveCommand));
+        OnPropertyChanged(nameof(SaveAsCommand));
     }
 
     private void OnFilterChanged()
@@ -521,46 +385,23 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
         MarkDirty();
     }
 
-    private void ScheduleAutoSave()
+    public void LoadFromWorkspace(Workspace workspace)
     {
-        // Auto-save only fires when we already have a path; new/unsaved files
-        // require explicit Save-As so we never pick a path on the user's behalf.
-        if (!SaveState.CanScheduleAutoSave) return;
-
-        if (_autoSaveTimer == null)
-        {
-            _autoSaveTimer = new DispatcherTimer { Interval = AutoSaveDelay };
-            _autoSaveTimer.Tick += OnAutoSaveTick;
-        }
-        _autoSaveTimer.Stop();
-        _autoSaveTimer.Start();
+        _workspace = workspace ?? new Workspace();
+        ReloadFromWorkspace();
     }
 
-    private void OnAutoSaveTick(object? sender, EventArgs e)
+    public Workspace BuildWorkspaceForSave()
     {
-        _autoSaveTimer?.Stop();
-        PerformAutoSave();
+        SyncSettings();
+        return _workspace;
     }
 
-    private void PerformAutoSave()
+    public void SyncSettings()
     {
-        if (string.IsNullOrEmpty(SaveState.CurrentFilePath)) return;
-        if (!SaveState.IsDirty) return;
-        if (!SaveState.CanScheduleAutoSave) return;
-
-        SaveState.OnAutoSaveBegin();
-        try
-        {
-            SyncWindowSizeBeforeSave();
-            WorkspaceService.Save(SaveState.CurrentFilePath!, _workspace);
-            SaveState.OnAutoSaveSuccess();
-        }
-        catch
-        {
-            // Stay dirty so the user can retry via Ctrl+S; surface the failure
-            // through SaveStatusText rather than a modal dialog.
-            SaveState.OnAutoSaveFail();
-        }
+        Filter.SyncToSettings(_workspace.Settings);
+        TagPanel.SyncToSettings(_workspace.Settings);
+        CardDisplay.SyncToSettings(_workspace.Settings);
     }
 
     private void ReloadFromWorkspace()
@@ -730,34 +571,4 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
         RandomPreviewCommand.RaiseCanExecuteChanged();
     }
 
-    public void LoadStartup(string? filePath = null)
-    {
-        if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
-        {
-            try
-            {
-                _workspace = WorkspaceService.Load(filePath);
-                _autoSaveTimer?.Stop();
-                SaveState.OnFileLoaded(filePath);
-                ReloadFromWorkspace();
-                return;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"ファイルを開けませんでした:\n{ex.Message}",
-                    "IdeaNest",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                // fall through to new workspace
-            }
-        }
-        ReloadFromWorkspace();
-    }
-
-    public void ApplyInitialWindowSize(Window window)
-    {
-        if (_workspace.Settings.WindowWidth  > 200) window.Width  = _workspace.Settings.WindowWidth;
-        if (_workspace.Settings.WindowHeight > 200) window.Height = _workspace.Settings.WindowHeight;
-    }
 }
