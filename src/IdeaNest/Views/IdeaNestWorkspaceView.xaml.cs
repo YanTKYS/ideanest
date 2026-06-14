@@ -23,20 +23,26 @@ public partial class IdeaNestWorkspaceView : UserControl
         set => SetValue(ShowMenuProperty, value);
     }
 
-    private IdeaNestWorkspaceViewModel Workspace => (IdeaNestWorkspaceViewModel)DataContext;
+    private IdeaNestWorkspaceViewModel? Workspace => DataContext as IdeaNestWorkspaceViewModel;
 
     public IdeaNestWorkspaceView()
     {
         InitializeComponent();
         PreviewKeyDown += OnWindowPreviewKeyDown;
+        DataContextChanged += (_, _) => ConfigureWorkspace();
         Loaded += (_, _) =>
         {
-            Workspace.SetOwnerResolver(() => Window.GetWindow(this));
+            ConfigureWorkspace();
             FocusWorkspace();
         };
     }
 
     public void FocusWorkspace() => CardArea.Focus();
+
+    private void ConfigureWorkspace()
+    {
+        Workspace?.SetOwnerResolver(() => Window.GetWindow(this));
+    }
 
     private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
@@ -54,7 +60,7 @@ public partial class IdeaNestWorkspaceView : UserControl
         {
             if (e.OriginalSource is TextBoxBase) return;
             if (!IsDescendantOrSelf(e.OriginalSource as DependencyObject, CardArea)) return;
-            if (Workspace.PasteAsNewCard()) e.Handled = true;
+            if (Workspace?.PasteAsNewCard() == true) e.Handled = true;
         }
     }
 
@@ -75,7 +81,7 @@ public partial class IdeaNestWorkspaceView : UserControl
         {
             if (!string.IsNullOrEmpty(SearchBox.Text))
             {
-                Workspace.SearchText = string.Empty;
+                if (Workspace is { } workspace) workspace.SearchText = string.Empty;
             }
             else
             {
@@ -87,12 +93,12 @@ public partial class IdeaNestWorkspaceView : UserControl
 
     private void OnExitClick(object sender, RoutedEventArgs e)
     {
-        Workspace.HostCommands.Exit?.Execute(null);
+        Workspace?.HostCommands.Exit?.Execute(null);
     }
 
     private void OnTutorialClick(object sender, RoutedEventArgs e)
     {
-        Workspace.HostCommands.ShowTutorial?.Execute(null);
+        Workspace?.HostCommands.ShowTutorial?.Execute(null);
     }
 
     private void OnCardMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -105,7 +111,7 @@ public partial class IdeaNestWorkspaceView : UserControl
         if (e.OriginalSource is DependencyObject src && IsInsideButton(src))
             return;
 
-        Workspace.PreviewIdeaCommand.Execute(card);
+        Workspace?.PreviewIdeaCommand.Execute(card);
     }
 
     private static bool IsInsideButton(DependencyObject src)
@@ -147,7 +153,7 @@ public partial class IdeaNestWorkspaceView : UserControl
         var paths = e.Data.GetData(DataFormats.FileDrop) as string[] ?? Array.Empty<string>();
         var textFiles = paths.Where(IsAcceptableTextFile).ToArray();
         if (textFiles.Length == 0) return;
-        Workspace.CreateCardsFromFiles(textFiles);
+        Workspace?.CreateCardsFromFiles(textFiles);
         e.Handled = true;
     }
 

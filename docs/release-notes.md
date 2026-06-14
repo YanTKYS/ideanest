@@ -7,6 +7,7 @@
 - `IdeaNestWorkspaceView.ShowMenu` で単体アプリ用メニューを表示・非表示にできるようにしました。
 - AppShell操作を `IdeaNestWorkspaceHostCommands` にまとめ、未設定時も安全に扱える構成にしました。
 - Owner解決、MessageBox、Clipboardの入口を `WorkspaceUiService` に集約し、WorkspaceViewが現在の親Windowを設定します。
+- WorkspaceViewはDataContext未設定で先に表示されても安全に動作し、後から設定・差し替えられたWorkspaceViewModelへOwner解決を構成します。
 - Workspaceデータ入出力、dirty通知、表示名・表示件数、フォーカス要求の入口を明確化しました。
 - NestSuite接続、汎用Workspace契約、`.ideanest` 保存形式の変更は行っていません。
 
