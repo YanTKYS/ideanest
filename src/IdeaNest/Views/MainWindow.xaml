@@ -4,5 +4,13 @@
         xmlns:views="clr-namespace:IdeaNest.Views"
         Title="{Binding Title}" Width="1100" Height="700" MinWidth="780" MinHeight="480"
         WindowStartupLocation="CenterScreen" Background="{StaticResource AppBackgroundBrush}">
+    <Window.InputBindings>
+        <!-- AppShell file commands remain window-level so they work regardless of focus. -->
+        <KeyBinding Modifiers="Ctrl"       Key="N" Command="{Binding NewWorkspaceCommand}" />
+        <KeyBinding Modifiers="Ctrl"       Key="O" Command="{Binding OpenCommand}" />
+        <KeyBinding Modifiers="Ctrl"       Key="S" Command="{Binding SaveCommand}" />
+        <KeyBinding Modifiers="Ctrl+Shift" Key="S" Command="{Binding SaveAsCommand}" />
+
+    </Window.InputBindings>
     <views:IdeaNestWorkspaceView DataContext="{Binding Workspace}" />
 </Window>

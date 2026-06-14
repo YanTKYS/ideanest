@@ -4,6 +4,11 @@
         xmlns:vm="clr-namespace:IdeaNest.ViewModels"
         Background="{StaticResource AppBackgroundBrush}"
         TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
+    <UserControl.InputBindings>
+        <KeyBinding Modifiers="Ctrl+Shift" Key="N" Command="{Binding AddIdeaCommand}" />
+        <KeyBinding Modifiers="Ctrl+Shift" Key="C" Command="{Binding CopyAllMarkdownCommand}" />
+        <KeyBinding Modifiers="Ctrl+Shift" Key="R" Command="{Binding RandomPreviewCommand}" />
+    </UserControl.InputBindings>
     <DockPanel>
         <!-- Menu (kept minimal: no border below) -->
         <Menu DockPanel.Dock="Top" Background="Transparent" Padding="4,2">
