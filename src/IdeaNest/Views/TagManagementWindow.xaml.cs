@@ -6,9 +6,9 @@ namespace IdeaNest.Views;
 
 public partial class TagManagementWindow : Window
 {
-    private readonly MainViewModel _vm;
+    private readonly IdeaNestWorkspaceViewModel _vm;
 
-    public TagManagementWindow(MainViewModel vm)
+    public TagManagementWindow(IdeaNestWorkspaceViewModel vm)
     {
         _vm = vm;
         InitializeComponent();
