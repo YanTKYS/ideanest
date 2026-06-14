@@ -599,3 +599,22 @@ v0.2.0 でのタグ正規化は「前後空白除去」「先頭 `#` 除去」�
 - データも `.notenest` / `.ideanest` で完全に分離でき、
   片方が壊れてももう片方に波及しない。
 - 将来 NoteNest 向けエクスポートを足すとしても、それは橋渡しであり同居ではない。
+
+## AppShell / WorkspaceView 責務分離の開始 (v1.1.0)
+
+将来 NestSuite のタブ内で IdeaNest の作業画面を再利用できるよう、AppShell と WorkspaceView の責務分離を開始した。v1.1.0 では NestSuite との接続は行わず、IdeaNest 単体アプリとして従来の起動・保存・終了およびUI挙動を維持することを優先する。
+
+- `MainWindow` は `IdeaNestWorkspaceView` をホストする単体アプリの外枠とする。
+- `MainViewModel` には AppShell として必要な外枠制御との互換入口を残し、`Workspace` を公開する。
+- `IdeaNestWorkspaceViewModel` にはカード編集・整理、検索・フィルタ、タグ、表示、エクスポートの中核を寄せる。
+- 第1段階では既存バインディングと保存挙動を安全に保つため継承による薄い互換層を採用し、過剰な `IWorkspace` 等の共通インターフェースは導入しない。
+
+
+## AppShell / WorkspaceView 境界の明確化 (v1.1.1)
+
+v1.1.0でWorkspaceView化の足場を作り、v1.1.1ではファイル操作・保存・自動保存・終了確認・保存状態をAppShell (`MainViewModel`) 側へ寄せた。`IdeaNestWorkspaceViewModel` はカード編集・整理の中核に寄せ、Workspaceデータの受け渡しとdirty通知でAppShellと連携する。NestSuite接続はまだ行わず、必要性が確定していない過剰な共通インターフェースも導入しない。
+
+
+## WorkspaceViewのホスト再利用準備 (v1.1.2)
+
+v1.1.2ではNestSuite接続は行わず、WorkspaceViewを外部ホストに載せやすくする準備に留めた。Workspace内メニューは単体アプリでは既定で表示し、将来ホスト利用では非表示にできる。ダイアログOwner、MessageBox、Clipboardなどホスト依存しやすい処理の入口をIdeaNest内の小さなサービスへ集約した。汎用 `IWorkspace` 契約はまだ導入せず、まずIdeaNest内で安全に再利用可能な構造に近づける。
