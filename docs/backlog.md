@@ -145,3 +145,10 @@ IdeaNest の設計方針から意図的に除外しているもの。要望が�
 - **v1.1.x 次候補**: NestSuite試験配置の前提整理。
 - **将来**: NestSuiteタブ内での `IdeaNestWorkspaceView` 表示検証、共通Workspace契約の検討。
 - **当面見送り**: NestSuite本体接続、共通ライブラリ化、保存形式変更。
+
+
+### v1.1.3 ホスト検証後の次候補
+
+- **v1.1.x 次候補**: NestSuite試験配置に向けた保存・未保存状態・タイトル・タブ終了確認の前提整理。
+- **将来**: NestSuiteタブ内での `IdeaNestWorkspaceView` 表示検証、共通Workspace契約の検討。
+- **当面見送り**: 共通ライブラリ化、保存形式変更、NestSuite本体接続。

@@ -101,6 +101,12 @@ public partial class IdeaNestWorkspaceView : UserControl
         Workspace?.HostCommands.ShowTutorial?.Execute(null);
     }
 
+    private void OnWorkspaceHostPreviewClick(object sender, RoutedEventArgs e)
+    {
+        var window = new WorkspaceHostPreviewWindow { Owner = Window.GetWindow(this) };
+        window.ShowDialog();
+    }
+
     private void OnCardMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         if (sender is not FrameworkElement fe || fe.DataContext is not IdeaCardViewModel card)

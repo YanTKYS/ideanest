@@ -648,3 +648,8 @@ v1.1.0でWorkspaceView化の足場を作り、v1.1.1ではファイル操作・�
 ## WorkspaceViewのホスト再利用準備 (v1.1.2)
 
 v1.1.2ではNestSuite接続は行わず、WorkspaceViewを外部ホストに載せやすくする準備に留めた。Workspace内メニューは単体アプリでは既定で表示し、将来ホスト利用では非表示にできる。ダイアログOwner、MessageBox、Clipboardなどホスト依存しやすい処理の入口をIdeaNest内の小さなサービスへ集約した。汎用 `IWorkspace` 契約はまだ導入せず、まずIdeaNest内で安全に再利用可能な構造に近づける。
+
+
+## WorkspaceViewホスト表示の最小検証 (v1.1.3)
+
+NestSuite接続前に、IdeaNest内の `WorkspaceHostPreviewWindow` でホスト表示を最小検証する。Workspace内メニュー非表示モードを実際に使用し、AppShellコマンド未設定時の安全性とホストWindowを基準にしたダイアログOwnerを確認できる。保存・自動保存は引き続きAppShell側責務とし、検証Windowではdirty通知の表示だけを行う。汎用 `IWorkspace` 契約はまだ導入しない。

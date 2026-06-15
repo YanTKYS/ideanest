@@ -70,6 +70,8 @@
             </MenuItem>
             <MenuItem Header="ヘルプ(_H)">
                 <MenuItem Header="チュートリアル(_T)" Click="OnTutorialClick" />
+                <Separator />
+                <MenuItem Header="WorkspaceViewホスト表示テスト(_W)" Click="OnWorkspaceHostPreviewClick" />
             </MenuItem>
         </Menu>
 
