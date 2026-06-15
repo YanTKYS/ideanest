@@ -1559,12 +1559,3 @@ NoteNest との直接連携 / AI 要約 / 自動分類。
 
 - Windows 上で `dotnet build` および `dotnet run --project src/IdeaNest/IdeaNest.csproj` を確認。
 - 保存形式の健全性は `tools/IdeaNest.Smoke` のスモークテストで確認可能 (クロスプラットフォーム)。
-
-## v1.1.0 — 2026-06-14
-
-### AppShell / IdeaNestWorkspaceView 切り出し第1段階
-
-- 従来の作業画面を独立した `IdeaNestWorkspaceView` UserControlへ移し、`MainWindow` は単体アプリのホストに整理しました。
-- カード編集・整理、フィルタ、タグ、表示、エクスポートの状態と操作を `IdeaNestWorkspaceViewModel` に移しました。
-- `MainViewModel` は互換性を保ちながら Workspace を公開するAppShell側の入口としました。
-- NestSuite接続、新機能、共通Workspace契約、`.ideanest` 保存形式の変更は行っていません。
