@@ -22,6 +22,17 @@ jobs:
       - name: Restore
         run: dotnet restore IdeaNest.sln
 
+      - name: Validate release-note version headings are unique
+        shell: pwsh
+        run: |
+          $versions = Select-String -Path docs/release-notes.md -Pattern '^## (v[0-9]+\.[0-9]+\.[0-9]+)\b' |
+            ForEach-Object { $_.Matches[0].Groups[1].Value }
+          $duplicates = $versions | Group-Object | Where-Object Count -gt 1
+          if ($duplicates) {
+            $names = ($duplicates | ForEach-Object Name) -join ', '
+            throw "Duplicate release-note version headings: $names"
+          }
+
       - name: Build (Release)
         run: dotnet build IdeaNest.sln --configuration Release --no-restore
 

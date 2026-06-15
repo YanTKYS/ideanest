@@ -12,6 +12,10 @@ namespace IdeaNest.ViewModels;
 /// </summary>
 internal sealed class WpfExportPlatform : IExportPlatform
 {
+    private readonly WorkspaceUiService _ui;
+
+    public WpfExportPlatform(WorkspaceUiService ui) => _ui = ui;
+
     public string? PromptSaveFilePath(string defaultFileName)
     {
         var dlg = new SaveFileDialog
@@ -27,16 +31,14 @@ internal sealed class WpfExportPlatform : IExportPlatform
     {
         var dlg = new NoteNestExportOptionsWindow
         {
-            Owner = Application.Current?.MainWindow,
+            Owner = _ui.Owner,
         };
         return dlg.ShowDialog() == true ? dlg.Options : null;
     }
 
-    public void SetClipboard(string text) => Clipboard.SetText(text);
+    public void SetClipboard(string text) => _ui.SetClipboardText(text);
 
-    public void ShowInformation(string message) => MessageBox.Show(
-        message, "IdeaNest", MessageBoxButton.OK, MessageBoxImage.Information);
+    public void ShowInformation(string message) => _ui.ShowInformation(message);
 
-    public void ShowError(string message) => MessageBox.Show(
-        message, "IdeaNest", MessageBoxButton.OK, MessageBoxImage.Error);
+    public void ShowError(string message) => _ui.ShowError(message);
 }
