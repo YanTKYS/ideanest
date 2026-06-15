@@ -2,8 +2,8 @@
 
 IdeaNest は、思いついたアイデアを素早く保存し、あとから検索・整理できる **ローカル利用前提のカード型メモツール** です。
 
-> **v1.1.3** — `IdeaNestWorkspaceView` をメニューなし・AppShellコマンドなしで表示する検証Windowを追加し、
-> 将来の外部ホスト配置をIdeaNest内で最小検証しました。NestSuite接続、UI・保存ファイル形式・既存機能の変更はありません。
+> **v1.1.4** — `WorkspaceHostPreviewWindow` の状態表示と試験配置前の確認事項を整理し、
+> NestSuite試験配置直前の準備を強化しました。NestSuite接続、UI・保存ファイル形式・既存機能の変更はありません。
 
 ## IdeaNest とは
 

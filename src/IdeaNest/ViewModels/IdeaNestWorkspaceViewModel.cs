@@ -136,6 +136,8 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
     public ICommand? SaveCommand => HostCommands.Save;
     public ICommand? SaveAsCommand => HostCommands.SaveAs;
     public string DisplayName => _workspace.WorkspaceName;
+    public ExportFilterContext CurrentFilterContext => new(
+        SearchText, SelectedTag, SelectedColor, ShowArchived);
 
     public string StatusMessage
     {
@@ -255,6 +257,7 @@ public class IdeaNestWorkspaceViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalCount));
         OnPropertyChanged(nameof(VisibleCount));
         OnPropertyChanged(nameof(VisibleCardCount));
+        OnPropertyChanged(nameof(CurrentFilterContext));
         OnPropertyChanged(nameof(HasActiveFilter));
         OnPropertyChanged(nameof(CountText));
         OnPropertyChanged(nameof(ShowEmptyState));

@@ -26,11 +26,26 @@ public partial class WorkspaceHostPreviewWindow : Window, INotifyPropertyChanged
         }
     }
 
+    public string CardStatus => $"Cards: {Workspace.TotalCount} / Visible: {Workspace.VisibleCardCount}";
+    public string FilterStatus => Workspace.Filter.HasActiveFilter ? "Filter: Active" : "Filter: None";
+
     public WorkspaceHostPreviewWindow()
     {
         InitializeComponent();
         DataContext = this;
         Workspace.DirtyRequested += (_, _) => DirtyStatus = "未保存の変更あり（検証用・保存なし）";
+        Workspace.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(IdeaNestWorkspaceViewModel.TotalCount)
+                               or nameof(IdeaNestWorkspaceViewModel.VisibleCardCount))
+            {
+                OnPropertyChanged(nameof(CardStatus));
+            }
+            if (e.PropertyName == nameof(IdeaNestWorkspaceViewModel.CurrentFilterContext))
+            {
+                OnPropertyChanged(nameof(FilterStatus));
+            }
+        };
         Loaded += (_, _) => WorkspaceView.FocusWorkspace();
     }
 

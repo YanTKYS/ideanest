@@ -10,12 +10,26 @@
         <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
                 Padding="12,8">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Right" Text="{Binding DirtyStatus}"
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Text="Hosted Preview — ファイル保存・自動保存なし"
                            Foreground="{StaticResource TextSecondaryBrush}" />
-                <TextBlock Text="外部ホスト想定: Workspaceメニューなし / ファイル保存・自動保存なし"
+                <TextBlock Grid.Column="1" Text="Menu: Hidden" Margin="16,0,0,0"
                            Foreground="{StaticResource TextSecondaryBrush}" />
-            </DockPanel>
+                <TextBlock Grid.Column="2" Text="{Binding CardStatus}" Margin="16,0,0,0"
+                           Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="3" Text="{Binding FilterStatus}" Margin="16,0,0,0"
+                           Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="4" Text="{Binding DirtyStatus}" Margin="16,0,0,0"
+                           Foreground="{StaticResource TextSecondaryBrush}" />
+            </Grid>
         </Border>
         <views:IdeaNestWorkspaceView x:Name="WorkspaceView"
                                      DataContext="{Binding Workspace}"

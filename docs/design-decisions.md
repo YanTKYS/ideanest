@@ -653,3 +653,8 @@ v1.1.2ではNestSuite接続は行わず、WorkspaceViewを外部ホストに載�
 ## WorkspaceViewホスト表示の最小検証 (v1.1.3)
 
 NestSuite接続前に、IdeaNest内の `WorkspaceHostPreviewWindow` でホスト表示を最小検証する。Workspace内メニュー非表示モードを実際に使用し、AppShellコマンド未設定時の安全性とホストWindowを基準にしたダイアログOwnerを確認できる。保存・自動保存は引き続きAppShell側責務とし、検証Windowではdirty通知の表示だけを行う。汎用 `IWorkspace` 契約はまだ導入しない。
+
+
+## NestSuite試験配置直前の確認 (v1.1.4)
+
+v1.1.4ではNestSuite本体接続前に、IdeaNest内の `WorkspaceHostPreviewWindow` を使ってホスト表示の確認を強化した。メニュー非表示、dirty通知、ホストWindow基準のOwner解決、AppShellコマンド未設定時の安全性を確認できる状態とした。NestSuite試験配置時には、保存・未保存確認・タブタイトル・タブクローズ制御をホスト側で扱う必要がある。汎用 `IWorkspace` 契約はまだ導入しない。
