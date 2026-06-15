@@ -92,3 +92,38 @@ IdeaNest の設計方針から意図的に除外しているもの。要望が�
 | クラウド同期 | ローカル利用前提の方針。OneDrive 等のフォルダへ手動配置することで代替可能 |
 | 共有編集 | ローカル単一ファイル管理の方針と根本的に合わない。排他制御・マージ処理が複雑 |
 | コメント機能 | カードに「会話」を持ち込むと NoteNest と役割が重複する。IdeaNest は「個人の思考在庫」に留まる |
+
+## AppShell / WorkspaceView 分離ロードマップ
+
+- **v1.1.x 系**: AppShell / WorkspaceView の段階的分離を継続し、外枠制御と作業状態の境界を明確化する。
+- **将来**: NestSuite タブ内での `IdeaNestWorkspaceView` 表示を検証する。
+- **将来**: 複数 Nest アプリで必要性が確認できた時点で共通 Workspace 契約を検討する。
+- **当面見送り**: NestSuite 本体接続、共通ライブラリ化、`.ideanest` 保存形式変更。
+
+
+### v1.1.x 境界整理の次候補
+
+- **次候補**: AppShell / WorkspaceView 境界のWindows実機回帰確認。
+- **将来**: NestSuiteタブ内表示検証、共通Workspace契約の検討。
+- **当面見送り**: NestSuite本体接続、共通ライブラリ化、保存形式変更。
+
+
+### v1.1.x ホスト再利用準備の次候補
+
+- **v1.1.x 次候補**: NestSuite試験配置の前提整理。
+- **将来**: NestSuiteタブ内での `IdeaNestWorkspaceView` 表示検証、共通Workspace契約の検討。
+- **当面見送り**: NestSuite本体接続、共通ライブラリ化、保存形式変更。
+
+
+### v1.1.3 ホスト検証後の次候補
+
+- **v1.1.x 次候補**: NestSuite試験配置に向けた保存・未保存状態・タイトル・タブ終了確認の前提整理。
+- **将来**: NestSuiteタブ内での `IdeaNestWorkspaceView` 表示検証、共通Workspace契約の検討。
+- **当面見送り**: 共通ライブラリ化、保存形式変更、NestSuite本体接続。
+
+
+### v1.1.4 試験配置前確認後の候補
+
+- **次候補**: NestSuite試験配置。
+- **将来**: 共通Workspace契約の検討、共通ライブラリ化。
+- **当面見送り**: 保存形式変更、NestSuite本体への本格統合。

@@ -1,5 +1,70 @@
 # リリースノート
 
+## v1.1.4 — 2026-06-15
+
+### NestSuite試験配置に向けた確認・小修正
+
+- `WorkspaceHostPreviewWindow` にMenu、dirty、全カード件数、表示中件数の状態表示を追加し、メニュー非表示での主要操作確認をしやすくしました。
+- WorkspaceViewModelから現在のフィルタ条件を読み取れる入口を追加し、表示名・件数・保存対象データと合わせて試験配置時に必要な情報を整理しました。
+- ホストコマンド未設定時の安全性、ホストWindow基準のOwner解決、dirty通知経路を確認しました。
+- 保存・未保存確認・タブタイトル・タブクローズ制御は将来のホスト側責務とし、NestSuite本体とは未接続です。
+
+---
+
+## v1.1.3 — 2026-06-15
+
+### WorkspaceViewホスト再利用の最小検証
+
+- ヘルプメニューから開ける `WorkspaceHostPreviewWindow` を追加し、WorkspaceViewをメニュー非表示・AppShellコマンド未設定・新規Workspace相当で表示できるようにしました。
+- 検証Windowではカード操作、検索、タグパネル、並び順、ダイアログOwner、dirty通知を確認でき、保存・自動保存は意図的に行いません。
+- 保存、未保存状態、タイトル、タブを閉じる確認は将来のホスト側で設計する必要があります。
+- NestSuite本体とは未接続で、`.ideanest` 保存形式も変更していません。
+
+---
+
+## v1.1.2 — 2026-06-14
+
+### WorkspaceViewのホスト再利用準備
+
+- `IdeaNestWorkspaceView.ShowMenu` で単体アプリ用メニューを表示・非表示にできるようにしました。
+- AppShell操作を `IdeaNestWorkspaceHostCommands` にまとめ、未設定時も安全に扱える構成にしました。
+- Owner解決、MessageBox、Clipboardの入口を `WorkspaceUiService` に集約し、WorkspaceViewが現在の親Windowを設定します。
+- WorkspaceViewはDataContext未設定で先に表示されても安全に動作し、後から設定・差し替えられたWorkspaceViewModelへOwner解決を構成します。
+- Workspaceデータ入出力、dirty通知、表示名・表示件数、フォーカス要求の入口を明確化しました。
+- NestSuite接続、汎用Workspace契約、`.ideanest` 保存形式の変更は行っていません。
+
+---
+
+## v1.1.1 — 2026-06-14
+
+### AppShell / WorkspaceView 境界の整理
+
+- ファイルの読込・保存・名前を付けて保存、最近使ったファイル更新、自動保存タイマー、未保存確認、タイトル・保存状態を `MainViewModel` に集約しました。
+- `IdeaNestWorkspaceViewModel` は読み込まれたWorkspaceデータの表示・カード編集・整理を担当し、`LoadFromWorkspace` / `BuildWorkspaceForSave` / dirty通知でAppShellと連携します。
+- `.ideanest` 保存形式、NestSuite接続、UI、既存機能は変更していません。
+
+---
+
+## v1.1.0 — 2026-06-14
+
+### 変更概要
+
+将来 NestSuite のタブ内で IdeaNest の作業画面を再利用できるよう、AppShell / `IdeaNestWorkspaceView` の責務分離を開始しました。第1段階では IdeaNest 単体アプリとしての既存動作とUIを維持することを優先しています。
+
+### 変更内容
+
+- 従来の作業画面を独立した `IdeaNestWorkspaceView` UserControlへ移し、`MainWindow` は単体アプリのホストに整理しました。
+- カード編集・整理、検索・フィルタ、タグ、表示、エクスポートの状態と操作を `IdeaNestWorkspaceViewModel` に移しました。
+- `MainViewModel` は既存バインディングとの互換性を保ちながら `Workspace` を公開するAppShell側の入口に整理しました。
+- 起動、スタートダイアログ、ファイル読み込み・保存、自動保存、未保存確認、終了処理など、IdeaNest単体アプリの既存挙動を維持しています。
+
+### 対象外・互換性
+
+- NestSuite本体との接続、NestSuite用タブUI、共通Workspace契約、新機能は追加していません。
+- `.ideanest` 保存形式は変更していません。
+
+---
+
 ## v1.0.3 — 2026-06-10
 
 ### 変更概要
